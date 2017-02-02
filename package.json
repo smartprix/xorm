@@ -1,0 +1,48 @@
+{
+  "name": "xorm",
+  "version": "0.1.0",
+  "description": "ORM based on ObjectionJS with some extra utilities",
+  "main": "dist/index.js",
+  "repository": "smartprix/xorm",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "npm run lint && npm run test-only",
+    "check-coverage": "true",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "test-only": "mocha test/*.test.js",
+    "build": "babel src --out-dir dist",
+    "-precommit": "npm run build && npm test && npm run check-coverage"
+  },
+  "author": "Hitesh Khandelwal <hitesh@smartprix.com> (http://www.smartprix.com/)",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "objection": "next"
+  },
+  "devDependencies": {
+    "babel-cli": "6.22.2",
+    "babel-plugin-transform-es2015-modules-commonjs": "6.22.0",
+    "babel-preset-stage-0": "6.22.0",
+    "babel-register": "6.22.0",
+    "chai": "3.5.0",
+    "eslint": "3.14.1",
+    "eslint-config-smartprix": "3.1.6",
+    "mocha": "3.2.0"
+  },
+  "babel": {
+    "presets": [
+      "stage-0"
+    ],
+    "plugins": [
+      "transform-es2015-modules-commonjs"
+    ],
+    "sourceMaps": true
+  },
+  "eslintConfig": {
+    "extends": "smartprix",
+    "rules": {}
+  }
+}
