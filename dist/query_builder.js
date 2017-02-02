@@ -24,7 +24,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 
 	save(fields) {
 		const id = this.modelClass().idColumn;
-		if (id in fields) {
+		if (!(id in fields)) {
 			return this.insert(fields);
 		}
 
@@ -36,7 +36,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 
 	saveAndFetch(fields) {
 		const id = this.modelClass().idColumn;
-		if (id in fields) {
+		if (!(id in fields)) {
 			return this.insertAndFetch(fields);
 		}
 
@@ -138,6 +138,16 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		return this.patch({
 			[this.softDeleteColumn]: null
 		});
+	}
+
+	touch() {
+		return this.patch({
+			updatedAt: new Date()
+		});
+	}
+
+	dontTouch() {
+		this.context().dontTouch = true;
 	}
 }
 

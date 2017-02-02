@@ -14,6 +14,8 @@ var _query_builder = require('./query_builder');
 
 var _query_builder2 = _interopRequireDefault(_query_builder);
 
+var _utils = require('./utils');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
@@ -24,6 +26,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 * 3. Soft Deletes
 * 4. scopes (define as static scopes = {default(builder) {}, something(builder) {}, ...})
 */
+/* eslint-disable import/no-dynamic-require, global-require */
 class BaseModel extends _objection.Model {
 
 	static get tableName() {
@@ -48,7 +51,7 @@ class BaseModel extends _objection.Model {
 		this._relationMappings = mappings;
 	}
 
-	static $relations() {}
+	static relations() {}
 
 	static where(...args) {
 		return this.query().where(...args);
@@ -60,7 +63,7 @@ class BaseModel extends _objection.Model {
 
 	$beforeInsert(context) {
 		super.$beforeInsert(context);
-		if (this.constructor.timestamps) {
+		if (this.constructor.timestamps && !this.context.dontTouch) {
 			this.createdAt = new Date();
 			this.updatedAt = new Date();
 		}
@@ -68,7 +71,7 @@ class BaseModel extends _objection.Model {
 
 	$beforeUpdate(context) {
 		super.$beforeUpdate(context);
-		if (this.constructor.timestamps) {
+		if (this.constructor.timestamps && !this.context.dontTouch) {
 			this.updatedAt = new Date();
 		}
 	}
@@ -86,7 +89,7 @@ class BaseModel extends _objection.Model {
 		return modelClass.default || modelClass;
 	}
 
-	static BelongsTo(model, options = {}) {
+	static belongsTo(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.BelongsTo(Person) (this = Pet)
@@ -113,7 +116,7 @@ class BaseModel extends _objection.Model {
 		};
 	}
 
-	static HasOne(model, options = {}) {
+	static hasOne(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.HasOne(Pet) (this = Person)
@@ -140,7 +143,7 @@ class BaseModel extends _objection.Model {
 		};
 	}
 
-	static HasMany(model, options = {}) {
+	static hasMany(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.HasMany(Pet) (this = Person)
@@ -149,7 +152,7 @@ class BaseModel extends _objection.Model {
 		// will be accessible through Person.pets
 
 		// Person.pets
-		const name = options.name || _lodash2.default.plural(_lodash2.default.camelCase(modelClass.name));
+		const name = options.name || (0, _utils.plural)(_lodash2.default.camelCase(modelClass.name));
 		// Pet.personId
 		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_lodash2.default.camelCase(this.name)}${_lodash2.default.upperFirst(this.idColumn)}`;
 		// Person.id
@@ -167,7 +170,7 @@ class BaseModel extends _objection.Model {
 		};
 	}
 
-	static HasManyThrough(model, options = {}) {
+	static hasManyThrough(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.HasManyThrough(Pet) (this = Person)
@@ -176,7 +179,7 @@ class BaseModel extends _objection.Model {
 		// will be accessible through Person.pets
 
 		// Person.pets
-		const name = options.name || _lodash2.default.plural(_lodash2.default.camelCase(modelClass.name));
+		const name = options.name || (0, _utils.plural)(_lodash2.default.camelCase(modelClass.name));
 		// Person.id
 		const joinFrom = options.joinFrom || `${this.tableName}.${this.idColumn}`;
 		// Pet.id
@@ -190,7 +193,7 @@ class BaseModel extends _objection.Model {
 
 		if (options.through.model) {
 			throughClass = this._getModelClass(options.through.model);
-			throughTable = throughClass.tableName;
+			throughTable = options.through.table || throughClass.tableName;
 		} else {
 			// Person_Pet
 			throughTable = options.through.table || `${this.name}_${modelClass.name}`;
@@ -221,10 +224,9 @@ class BaseModel extends _objection.Model {
 			}
 		};
 	}
-} /* eslint-disable import/no-dynamic-require, global-require */
+}
+
 BaseModel.timestamps = true;
-
-
 BaseModel.QueryBuilder = _query_builder2.default;
 BaseModel.RelatedQueryBuilder = _query_builder2.default;
 

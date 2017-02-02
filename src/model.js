@@ -2,6 +2,7 @@
 import _ from 'lodash';
 import {Model} from 'objection';
 import BaseQueryBuilder from './query_builder';
+import {plural} from './utils';
 
 /**
 * Base class that all of our models will extend
@@ -36,7 +37,7 @@ class BaseModel extends Model {
 		this._relationMappings = mappings;
 	}
 
-	static $relations() {}
+	static relations() {}
 
 	static where(...args) {
 		return this.query().where(...args);
@@ -48,7 +49,7 @@ class BaseModel extends Model {
 
 	$beforeInsert(context) {
 		super.$beforeInsert(context);
-		if (this.constructor.timestamps) {
+		if (this.constructor.timestamps && !this.context.dontTouch) {
 			this.createdAt = new Date();
 			this.updatedAt = new Date();
 		}
@@ -56,7 +57,7 @@ class BaseModel extends Model {
 
 	$beforeUpdate(context) {
 		super.$beforeUpdate(context);
-		if (this.constructor.timestamps) {
+		if (this.constructor.timestamps && !this.context.dontTouch) {
 			this.updatedAt = new Date();
 		}
 	}
@@ -75,7 +76,7 @@ class BaseModel extends Model {
 		return modelClass.default || modelClass;
 	}
 
-	static BelongsTo(model, options = {}) {
+	static belongsTo(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.BelongsTo(Person) (this = Pet)
@@ -102,7 +103,7 @@ class BaseModel extends Model {
 		};
 	}
 
-	static HasOne(model, options = {}) {
+	static hasOne(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.HasOne(Pet) (this = Person)
@@ -129,7 +130,7 @@ class BaseModel extends Model {
 		};
 	}
 
-	static HasMany(model, options = {}) {
+	static hasMany(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.HasMany(Pet) (this = Person)
@@ -138,7 +139,7 @@ class BaseModel extends Model {
 		// will be accessible through Person.pets
 
 		// Person.pets
-		const name = options.name || _.plural(_.camelCase(modelClass.name));
+		const name = options.name || plural(_.camelCase(modelClass.name));
 		// Pet.personId
 		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_.camelCase(this.name)}${_.upperFirst(this.idColumn)}`;
 		// Person.id
@@ -156,7 +157,7 @@ class BaseModel extends Model {
 		};
 	}
 
-	static HasManyThrough(model, options = {}) {
+	static hasManyThrough(model, options = {}) {
 		const modelClass = this._getModelClass(model);
 
 		// this.HasManyThrough(Pet) (this = Person)
@@ -165,7 +166,7 @@ class BaseModel extends Model {
 		// will be accessible through Person.pets
 
 		// Person.pets
-		const name = options.name || _.plural(_.camelCase(modelClass.name));
+		const name = options.name || plural(_.camelCase(modelClass.name));
 		// Person.id
 		const joinFrom = options.joinFrom || `${this.tableName}.${this.idColumn}`;
 		// Pet.id
@@ -179,7 +180,7 @@ class BaseModel extends Model {
 
 		if (options.through.model) {
 			throughClass = this._getModelClass(options.through.model);
-			throughTable = throughClass.tableName;
+			throughTable = options.through.table || throughClass.tableName;
 		}
 		else {
 			// Person_Pet
