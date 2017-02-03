@@ -1,4 +1,4 @@
-import _ from 'loadsh';
+import _ from 'lodash';
 
 function isVowel(char) {
 	return (/^[aeiou]$/i).test(char);
