@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import {QueryBuilder} from 'objection';
 
 class BaseQueryBuilder extends QueryBuilder {

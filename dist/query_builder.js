@@ -4,7 +4,13 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
+var _lodash = require('lodash');
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
 var _objection = require('objection');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 class BaseQueryBuilder extends _objection.QueryBuilder {
 	constructor(modelClass) {
@@ -28,7 +34,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 			return this.insert(fields);
 		}
 
-		const patchFields = _.assign({}, fields);
+		const patchFields = _lodash2.default.assign({}, fields);
 		delete patchFields[id];
 
 		return this.patch(patchFields).where(id, fields[id]);
@@ -40,7 +46,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 			return this.insertAndFetch(fields);
 		}
 
-		const patchFields = _.assign({}, fields);
+		const patchFields = _lodash2.default.assign({}, fields);
 		delete patchFields[id];
 
 		return this.patchAndFetchById(fields[id], patchFields);
@@ -73,7 +79,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 			});
 		}
 
-		_.forEach(this.modelClass().scopes, (func, name) => {
+		_lodash2.default.forEach(this.modelClass().scopes, (func, name) => {
 			this[name] = func;
 		});
 	}
@@ -87,7 +93,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		if (!this.modelClass().softDelete) return;
 
 		let softDeleteColumn = 'deletedAt';
-		if (_.isString(this.modelClass.softDelete)) {
+		if (_lodash2.default.isString(this.modelClass.softDelete)) {
 			softDeleteColumn = this.modelClass.softDelete;
 		}
 
