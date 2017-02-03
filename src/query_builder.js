@@ -145,6 +145,7 @@ class BaseQueryBuilder extends QueryBuilder {
 
 	dontTouch() {
 		this.context().dontTouch = true;
+		return this;
 	}
 }
 

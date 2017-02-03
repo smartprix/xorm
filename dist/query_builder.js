@@ -149,6 +149,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 
 	dontTouch() {
 		this.context().dontTouch = true;
+		return this;
 	}
 }
 
