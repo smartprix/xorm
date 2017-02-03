@@ -5,9 +5,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.plural = undefined;
 
-var _loadsh = require('loadsh');
+var _lodash = require('lodash');
 
-var _loadsh2 = _interopRequireDefault(_loadsh);
+var _lodash2 = _interopRequireDefault(_lodash);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
