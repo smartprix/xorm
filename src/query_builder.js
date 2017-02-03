@@ -115,9 +115,10 @@ class BaseQueryBuilder extends QueryBuilder {
 	}
 
 	softDelete() {
-		return this.patch({
-			[this.modelClass().softDeleteColumn]: new Date(),
-		});
+		return this.dontTouch()
+			.patch({
+				[this.modelClass().softDeleteColumn]: new Date(),
+			});
 	}
 
 	trash() {
@@ -129,9 +130,11 @@ class BaseQueryBuilder extends QueryBuilder {
 	}
 
 	restore() {
-		return this.patch({
-			[this.modelClass().softDeleteColumn]: null,
-		});
+		return this.dontTouch()
+			.withTrashed()
+			.patch({
+				[this.modelClass().softDeleteColumn]: null,
+			});
 	}
 
 	touch() {

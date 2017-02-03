@@ -122,7 +122,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 	}
 
 	softDelete() {
-		return this.patch({
+		return this.dontTouch().patch({
 			[this.modelClass().softDeleteColumn]: new Date()
 		});
 	}
@@ -136,7 +136,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 	}
 
 	restore() {
-		return this.patch({
+		return this.dontTouch().withTrashed().patch({
 			[this.modelClass().softDeleteColumn]: null
 		});
 	}
