@@ -63,7 +63,7 @@ class BaseModel extends _objection.Model {
 
 	$beforeInsert(context) {
 		super.$beforeInsert(context);
-		if (this.constructor.timestamps && !this.context.dontTouch) {
+		if (this.constructor.timestamps && context.dontTouch) {
 			this.createdAt = new Date();
 			this.updatedAt = new Date();
 		}
@@ -71,7 +71,7 @@ class BaseModel extends _objection.Model {
 
 	$beforeUpdate(context) {
 		super.$beforeUpdate(context);
-		if (this.constructor.timestamps && !this.context.dontTouch) {
+		if (this.constructor.timestamps && context.dontTouch) {
 			this.updatedAt = new Date();
 		}
 	}
