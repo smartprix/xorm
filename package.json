@@ -30,6 +30,7 @@
     "chai": "3.5.0",
     "eslint": "3.14.1",
     "eslint-config-smartprix": "3.1.6",
+    "knex": "^0.12.6",
     "mocha": "3.2.0"
   },
   "babel": {

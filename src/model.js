@@ -14,6 +14,29 @@ import {plural} from './utils';
 */
 class BaseModel extends Model {
 	static timestamps = true;
+	static softDelete = false;
+
+	static get softDeleteColumn() {
+		if (_.isString(this.softDelete)) {
+			return this.softDelete;
+		}
+
+		return 'deletedAt';
+	}
+
+	static get systemColumns() {
+		const columns = [];
+		if (this.timestamps) {
+			columns.push('createdAt');
+			columns.push('updatedAt');
+		}
+
+		if (this.softDelete) {
+			columns.push(this.softDeleteColumn);
+		}
+
+		return columns;
+	}
 
 	static get tableName() {
 		this._tableName = this._tableName || this.name;
@@ -60,6 +83,21 @@ class BaseModel extends Model {
 		if (this.constructor.timestamps && !context.dontTouch) {
 			this.updatedAt = new Date();
 		}
+	}
+
+	$toDatabaseJson() {
+		const jsonSchema = this.constructor.getJsonSchema();
+
+		if (jsonSchema && jsonSchema.properties && this.constructor.pickJsonSchemaProperties) {
+			const columns = this.constructor.systemColumns || [];
+			columns.forEach((column) => {
+				jsonSchema.properties[column] = {type: ['datetime', 'string', 'int']};
+			});
+
+			return this.$$toJson(true, null, jsonSchema.properties);
+		}
+
+		return this.$$toJson(true, this.constructor.getRelations(), null);
 	}
 
 	static _getModelClass(model) {

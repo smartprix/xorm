@@ -92,12 +92,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 	_handleSoftDelete() {
 		if (!this.modelClass().softDelete) return;
 
-		let softDeleteColumn = 'deletedAt';
-		if (_lodash2.default.isString(this.modelClass.softDelete)) {
-			softDeleteColumn = this.modelClass.softDelete;
-		}
-
-		this.softDeleteColumn = softDeleteColumn;
+		let softDeleteColumn = this.modelClass().softDeleteColumn;
 
 		this.onBuild(builder => {
 			if (builder.context().onlyTrashed) {
@@ -128,7 +123,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 
 	softDelete() {
 		return this.patch({
-			[this.softDeleteColumn]: new Date()
+			[this.modelClass().softDeleteColumn]: new Date()
 		});
 	}
 
@@ -142,7 +137,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 
 	restore() {
 		return this.patch({
-			[this.softDeleteColumn]: null
+			[this.modelClass().softDeleteColumn]: null
 		});
 	}
 

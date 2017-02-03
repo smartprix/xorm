@@ -29,6 +29,28 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 /* eslint-disable import/no-dynamic-require, global-require */
 class BaseModel extends _objection.Model {
 
+	static get softDeleteColumn() {
+		if (_lodash2.default.isString(this.softDelete)) {
+			return this.softDelete;
+		}
+
+		return 'deletedAt';
+	}
+
+	static get systemColumns() {
+		const columns = [];
+		if (this.timestamps) {
+			columns.push('createdAt');
+			columns.push('updatedAt');
+		}
+
+		if (this.softDelete) {
+			columns.push(this.softDeleteColumn);
+		}
+
+		return columns;
+	}
+
 	static get tableName() {
 		this._tableName = this._tableName || this.name;
 		return this._tableName;
@@ -74,6 +96,21 @@ class BaseModel extends _objection.Model {
 		if (this.constructor.timestamps && !context.dontTouch) {
 			this.updatedAt = new Date();
 		}
+	}
+
+	$toDatabaseJson() {
+		const jsonSchema = this.constructor.getJsonSchema();
+
+		if (jsonSchema && jsonSchema.properties && this.constructor.pickJsonSchemaProperties) {
+			const columns = this.constructor.systemColumns || [];
+			columns.forEach(column => {
+				jsonSchema.properties[column] = { type: ['datetime', 'string', 'int'] };
+			});
+
+			return this.$$toJson(true, null, jsonSchema.properties);
+		}
+
+		return this.$$toJson(true, this.constructor.getRelations(), null);
 	}
 
 	static _getModelClass(model) {
@@ -227,6 +264,7 @@ class BaseModel extends _objection.Model {
 }
 
 BaseModel.timestamps = true;
+BaseModel.softDelete = false;
 BaseModel.QueryBuilder = _query_builder2.default;
 BaseModel.RelatedQueryBuilder = _query_builder2.default;
 
