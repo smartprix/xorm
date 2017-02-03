@@ -78,11 +78,15 @@ class BaseModel extends Model {
 		}
 	}
 
-	$beforeUpdate(context) {
-		super.$beforeUpdate(context);
+	$beforeUpdate(opt, context) {
+		super.$beforeUpdate(opt, context);
 		if (this.constructor.timestamps && !context.dontTouch) {
 			this.updatedAt = new Date();
 		}
+	}
+
+	$beforeDelete(context) {
+		super.$beforeDelete(context);
 	}
 
 	$toDatabaseJson() {
