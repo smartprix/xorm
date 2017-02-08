@@ -60,7 +60,7 @@ class BaseModel extends Model {
 		this._relationMappings = mappings;
 	}
 
-	static relations() {}
+	static $relations() {}
 
 	static where(...args) {
 		return this.query().where(...args);

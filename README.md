@@ -88,7 +88,7 @@ Instead of doing `Person.query().where()` you can do `Person.where()`
 Instead of doing `Person.query().find()` you can do `Person.find()`
 
 ### Easier Relationships
-You can define all your relationships in the `relations` method.
+You can define all your relationships in the `$relations` method.
 #### Methods for defining relations
 **belongsTo(model, options)**
 **hasOne(model, options)**
@@ -113,7 +113,7 @@ through: {
 
 ```js
 class Pet extends Model {
-	static relations() {
+	static $relations() {
     	this.hasOne(Pet);
         this.hasMany(Toy, {name: 'toys'});
         this.belongsTo(Person);
