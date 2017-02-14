@@ -1,4 +1,5 @@
 /* eslint-disable import/no-dynamic-require, global-require */
+import path from 'path';
 import _ from 'lodash';
 import {Model} from 'objection';
 import BaseQueryBuilder from './query_builder';
@@ -15,6 +16,12 @@ import {plural} from './utils';
 class BaseModel extends Model {
 	static timestamps = true;
 	static softDelete = false;
+	static basePath = '';
+
+	// base path for requiring models in relations
+	static setBasePath(path) {
+		this.basePath = path;
+	}
 
 	static get softDeleteColumn() {
 		if (_.isString(this.softDelete)) {
@@ -106,15 +113,7 @@ class BaseModel extends Model {
 
 	static _getModelClass(model) {
 		if (!_.isString(model)) return model;
-
-		let modelClass;
-		if (_.startsWith(model, '.') || _.startsWith(model, '/')) {
-			modelClass = require(model);
-		}
-		else {
-			modelClass = require(`${process.cwd()}/src/models/${model}`);
-		}
-
+		const modelClass = require(path.resolve(this.basePath, model));
 		return modelClass.default || modelClass;
 	}
 

@@ -23,27 +23,27 @@ class Person extends Model {
 ```
 
 ### Automatic timestamps
-Every model has automatically managed timestamps (`createdAt` and `updatedAt`), which gets updated whenever the model is created or updated.
-For disabling the timestamps you can do `static timestamps = false;` in your model.
+Every model has automatically managed timestamps (`createdAt` and `updatedAt`), which gets updated whenever the model is created or updated.  
+For disabling the timestamps you can do `static timestamps = false;` in your model.  
 
-For dealing with timestamp few extra methods are added:
-`touch`: update `updatedAt` of the model to current time.
-`dontTouch`: don't update the timestamps after executing the query
+For dealing with timestamp few extra methods are added:  
+`touch`: update `updatedAt` of the model to current time.  
+`dontTouch`: don't update the timestamps after executing the query  
 
 ### Soft Delete
-For turning on soft delete you can do `static softDelete = true;` (make sure your schema has `deletedAt` column as a nullable timestamp)
-So whenever you delete a model, it won't actually be deleted from the database, instead the value of `deletedAt` column will be set to current time.
-When retriving, it will automatically take care of the deleted models (they won't come in results).
+For turning on soft delete you can do `static softDelete = true;` (make sure your schema has `deletedAt` column as a nullable timestamp)  
+So whenever you delete a model, it won't actually be deleted from the database, instead the value of `deletedAt` column will be set to current time.  
+When retriving, it will automatically take care of the deleted models (they won't come in results).  
 
-For dealing with softDelete few extra methods are added:
-`delete`: soft delete or delete a model (depending on whether softDelete is true or false)
-`trash`: soft delete a model (you won't usually need this method, just use `delete`)
-`withTrashed`: get all models (whether they are soft deleted or not)
-`onlyTrashed`: only get soft deleted models.
-`restore`: restore (undelete) a soft deleted model.
-`forceDelete`: actually delete a model from the database
+For dealing with softDelete few extra methods are added:  
+`delete`: soft delete or delete a model (depending on whether softDelete is true or false)  
+`trash`: soft delete a model (you won't usually need this method, just use `delete`)  
+`withTrashed`: get all models (whether they are soft deleted or not)  
+`onlyTrashed`: only get soft deleted models.  
+`restore`: restore (undelete) a soft deleted model.  
+`forceDelete`: actually delete a model from the database  
 
-If you want to use some other column name instead of `deletedAt` you can do `static softDelete = 'deleted_at';`
+If you want to use some other column name instead of `deletedAt` you can do `static softDelete = 'deleted_at';`  
 
 ```js
 class Person extends Model {
@@ -66,8 +66,8 @@ Person.query().forceDelete();
 ```
 
 ### save and saveAndFetch
-`save`: inserts a model if the id column does not exist, otherwise updates it.
-`saveAndFetch`: saves the model and then fetches it.
+`save`: inserts a model if the id column does not exist, otherwise updates it.  
+`saveAndFetch`: saves the model and then fetches it.  
 
 ### find Method
 `find`: find is like where except if only a single argument is given, it treats the argument as an id.
@@ -84,8 +84,8 @@ Person.query().where('name', 'Hitesh');
 ```
 
 ### where and find methods on model
-Instead of doing `Person.query().where()` you can do `Person.where()`
-Instead of doing `Person.query().find()` you can do `Person.find()`
+Instead of doing `Person.query().where()` you can do `Person.where()`  
+Instead of doing `Person.query().find()` you can do `Person.find()`  
 
 ### Easier Relationships
 You can define all your relationships in the `$relations` method.
@@ -128,3 +128,5 @@ class Pet extends Model {
     }
 }
 ```
+
+Model can be a model object, or an absolute path to a model class. It can also be a relative path if you set the basePath of all models using `Model.setBasePath(path)`

@@ -4,6 +4,10 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
+var _path = require('path');
+
+var _path2 = _interopRequireDefault(_path);
+
 var _lodash = require('lodash');
 
 var _lodash2 = _interopRequireDefault(_lodash);
@@ -26,8 +30,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 * 3. Soft Deletes
 * 4. scopes (define as static scopes = {default(builder) {}, something(builder) {}, ...})
 */
-/* eslint-disable import/no-dynamic-require, global-require */
 class BaseModel extends _objection.Model {
+
+	// base path for requiring models in relations
+	static setBasePath(path) {
+		this.basePath = path;
+	}
 
 	static get softDeleteColumn() {
 		if (_lodash2.default.isString(this.softDelete)) {
@@ -119,14 +127,7 @@ class BaseModel extends _objection.Model {
 
 	static _getModelClass(model) {
 		if (!_lodash2.default.isString(model)) return model;
-
-		let modelClass;
-		if (_lodash2.default.startsWith(model, '.') || _lodash2.default.startsWith(model, '/')) {
-			modelClass = require(model);
-		} else {
-			modelClass = require(`${process.cwd()}/src/models/${model}`);
-		}
-
+		const modelClass = require(_path2.default.resolve(this.basePath, model));
 		return modelClass.default || modelClass;
 	}
 
@@ -265,10 +266,12 @@ class BaseModel extends _objection.Model {
 			}
 		};
 	}
-}
-
+} /* eslint-disable import/no-dynamic-require, global-require */
 BaseModel.timestamps = true;
 BaseModel.softDelete = false;
+BaseModel.basePath = '';
+
+
 BaseModel.QueryBuilder = _query_builder2.default;
 BaseModel.RelatedQueryBuilder = _query_builder2.default;
 
