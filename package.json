@@ -23,14 +23,14 @@
     "objection": "next"
   },
   "devDependencies": {
-    "babel-cli": "6.22.2",
-    "babel-plugin-transform-es2015-modules-commonjs": "6.22.0",
+    "babel-cli": "6.23.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "6.23.0",
     "babel-preset-stage-0": "6.22.0",
-    "babel-register": "6.22.0",
+    "babel-register": "6.23.0",
     "chai": "3.5.0",
-    "eslint": "3.14.1",
+    "eslint": "3.16.1",
     "eslint-config-smartprix": "3.1.6",
-    "knex": "^0.12.6",
+    "knex": "^0.12.7",
     "mocha": "3.2.0"
   },
   "babel": {

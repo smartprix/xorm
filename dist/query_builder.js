@@ -92,7 +92,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 	_handleSoftDelete() {
 		if (!this.modelClass().softDelete) return;
 
-		let softDeleteColumn = this.modelClass().softDeleteColumn;
+		const softDeleteColumn = this.modelClass().softDeleteColumn;
 
 		this.onBuild(builder => {
 			if (builder.context().onlyTrashed) {

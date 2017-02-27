@@ -4,6 +4,7 @@ import _ from 'lodash';
 import {Model} from 'objection';
 import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
+import UserError from './user_error';
 
 /**
 * Base class that all of our models will extend
@@ -16,11 +17,12 @@ import {plural} from './utils';
 class BaseModel extends Model {
 	static timestamps = true;
 	static softDelete = false;
+	static Error = UserError;
 	static basePath = '';
 
 	// base path for requiring models in relations
-	static setBasePath(path) {
-		this.basePath = path;
+	static setBasePath(basePath) {
+		this.basePath = basePath;
 	}
 
 	static get softDeleteColumn() {

@@ -3,14 +3,6 @@
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
-exports.plural = undefined;
-
-var _lodash = require('lodash');
-
-var _lodash2 = _interopRequireDefault(_lodash);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function isVowel(char) {
 	return (/^[aeiou]$/i.test(char)
 	);
@@ -46,3 +38,5 @@ function plural(str, count = 2) {
 }
 
 exports.plural = plural;
+exports.isConsonant = isConsonant;
+exports.isVowel = isVowel;

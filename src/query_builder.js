@@ -84,7 +84,7 @@ class BaseQueryBuilder extends QueryBuilder {
 	_handleSoftDelete() {
 		if (!this.modelClass().softDelete) return;
 
-		let softDeleteColumn = this.modelClass().softDeleteColumn;
+		const softDeleteColumn = this.modelClass().softDeleteColumn;
 
 		this.onBuild((builder) => {
 			if (builder.context().onlyTrashed) {
@@ -139,7 +139,7 @@ class BaseQueryBuilder extends QueryBuilder {
 
 	touch() {
 		return this.patch({
-			updatedAt: new Date()
+			updatedAt: new Date(),
 		});
 	}
 

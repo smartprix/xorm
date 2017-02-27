@@ -20,6 +20,10 @@ var _query_builder2 = _interopRequireDefault(_query_builder);
 
 var _utils = require('./utils');
 
+var _user_error = require('./user_error');
+
+var _user_error2 = _interopRequireDefault(_user_error);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
@@ -30,11 +34,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 * 3. Soft Deletes
 * 4. scopes (define as static scopes = {default(builder) {}, something(builder) {}, ...})
 */
+/* eslint-disable import/no-dynamic-require, global-require */
 class BaseModel extends _objection.Model {
 
 	// base path for requiring models in relations
-	static setBasePath(path) {
-		this.basePath = path;
+	static setBasePath(basePath) {
+		this.basePath = basePath;
 	}
 
 	static get softDeleteColumn() {
@@ -266,12 +271,12 @@ class BaseModel extends _objection.Model {
 			}
 		};
 	}
-} /* eslint-disable import/no-dynamic-require, global-require */
+}
+
 BaseModel.timestamps = true;
 BaseModel.softDelete = false;
+BaseModel.Error = _user_error2.default;
 BaseModel.basePath = '';
-
-
 BaseModel.QueryBuilder = _query_builder2.default;
 BaseModel.RelatedQueryBuilder = _query_builder2.default;
 
