@@ -130,3 +130,27 @@ class Pet extends Model {
 ```
 
 Model can be a model object, or an absolute path to a model class. It can also be a relative path if you set the basePath of all models using `Model.setBasePath(path)`
+
+### UserError class
+If you throw any error using UserError class, it'll be sent to the API client (if you're using graphql & gqutils). Otherwise errors are simply sent as `Server Error`. You can also throw an object using it.
+
+```js
+import {UserError} from 'xorm';
+
+async function saveStore(store) {
+	if (!store.name) {
+		throw new UserError({
+			name: 'Name is required',
+		});
+	}
+}
+
+// Alternatively instead of importing UserError you can simply throw Model.Error
+async function saveStore(store) {
+	if (!store.name) {
+		throw new Store.Error({
+			name: 'Name is required',
+		});
+	}
+}
+```
