@@ -3,18 +3,27 @@
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
-exports.UserError = exports.QueryBuilder = exports.Model = undefined;
+exports.UserError = exports.QueryBuilder = exports.Model = exports.Promise = exports.Validator = exports.ValidationError = undefined;
 
 var _objection = require('objection');
 
-Object.keys(_objection).forEach(function (key) {
-	if (key === "default" || key === "__esModule") return;
-	Object.defineProperty(exports, key, {
-		enumerable: true,
-		get: function () {
-			return _objection[key];
-		}
-	});
+Object.defineProperty(exports, 'ValidationError', {
+	enumerable: true,
+	get: function () {
+		return _objection.ValidationError;
+	}
+});
+Object.defineProperty(exports, 'Validator', {
+	enumerable: true,
+	get: function () {
+		return _objection.Validator;
+	}
+});
+Object.defineProperty(exports, 'Promise', {
+	enumerable: true,
+	get: function () {
+		return _objection.Promise;
+	}
 });
 
 var _model = require('./model');
