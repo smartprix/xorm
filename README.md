@@ -67,7 +67,11 @@ Person.query().forceDelete();
 
 ### save and saveAndFetch
 `save`: inserts a model if the id column does not exist, otherwise updates it.  
-`saveAndFetch`: saves the model and then fetches it.  
+`saveAndFetch`: saves the model and then fetches it. 
+
+### wrapWhere
+Wraps the where condition till now into braces  
+so `builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');` becomes `"WHERE (a = 'b' OR c = 'd') AND e = 'f'"`
 
 ### find Method
 `find`: find is like where except if only a single argument is given, it treats the argument as an id.
