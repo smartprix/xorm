@@ -97,7 +97,7 @@ class BaseQueryBuilder extends QueryBuilder {
 			});
 		}
 		else if (whereOperations.length === 1) {
-			this._operations.push(whereOperations);
+			this._operations.push(whereOperations[0]);
 		}
 
 		return this;
