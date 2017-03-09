@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
-exports.UserError = exports.QueryBuilder = exports.Model = exports.Promise = exports.Validator = exports.ValidationError = undefined;
+exports.UserError = exports.QueryBuilder = exports.Model = exports.Promise = exports.AjvValidator = exports.Validator = exports.ValidationError = undefined;
 
 var _objection = require('objection');
 
@@ -17,6 +17,12 @@ Object.defineProperty(exports, 'Validator', {
 	enumerable: true,
 	get: function () {
 		return _objection.Validator;
+	}
+});
+Object.defineProperty(exports, 'AjvValidator', {
+	enumerable: true,
+	get: function () {
+		return _objection.AjvValidator;
 	}
 });
 Object.defineProperty(exports, 'Promise', {

@@ -100,7 +100,7 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		if (whereOperations.length > 1) {
 			this.where(q => {
 				whereOperations.forEach(operation => {
-					q[operation.name].apply(q, operation.args);
+					q[operation.name](...operation.args);
 				});
 			});
 		} else if (whereOperations.length === 1) {

@@ -26,6 +26,15 @@ var _user_error2 = _interopRequireDefault(_user_error);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+/* eslint-disable import/no-dynamic-require, global-require */
+const httpUrlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
+'((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+'(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+'(\\#[-a-z\\d_]*)?$', 'i' // fragment locator
+);
+
 /**
 * Base class that all of our models will extend
 * This has few extra utilities over the Objection Model
@@ -34,8 +43,22 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 * 3. Soft Deletes
 * 4. scopes (define as static scopes = {default(builder) {}, something(builder) {}, ...})
 */
-/* eslint-disable import/no-dynamic-require, global-require */
 class BaseModel extends _objection.Model {
+
+	static createValidator() {
+		return new _objection.AjvValidator({
+			onCreateAjv: ajv => {
+				// Here you can modify the `Ajv` instance.
+				ajv.addFormat('url', httpUrlPattern);
+			},
+			options: {
+				allErrors: true,
+				validateSchema: false,
+				ownProperties: true,
+				v5: true
+			}
+		});
+	}
 
 	// base path for requiring models in relations
 	static setBasePath(basePath) {
@@ -94,6 +117,16 @@ class BaseModel extends _objection.Model {
 
 	static find(...args) {
 		return this.query().find(...args);
+	}
+
+	static getFindByIdSubResolver(propName) {
+		if (!propName) propName = `${_lodash2.default.camelCase(this.name)}Id`;
+
+		return obj => this.query().findById(obj[propName]);
+	}
+
+	static getDeleteByIdResolver() {
+		return (root, obj) => this.query().deleteById(obj[this.idColumn]).then(() => ({ id: obj[this.idColumn] }));
 	}
 
 	$beforeInsert(context) {

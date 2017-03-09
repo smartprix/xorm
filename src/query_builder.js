@@ -92,7 +92,7 @@ class BaseQueryBuilder extends QueryBuilder {
 		if (whereOperations.length > 1) {
 			this.where((q) => {
 				whereOperations.forEach((operation) => {
-					q[operation.name].apply(q, operation.args);
+					q[operation.name](...operation.args);
 				});
 			});
 		}
@@ -112,10 +112,10 @@ class BaseQueryBuilder extends QueryBuilder {
 			builder.wrapWhere();
 
 			if (builder.context().onlyTrashed) {
-				builder.where((q) => q.whereNotNull(softDeleteColumn));
+				builder.where(q => q.whereNotNull(softDeleteColumn));
 			}
 			else if (!builder.context().withTrashed) {
-				builder.where((q) => q.whereNull(softDeleteColumn));
+				builder.where(q => q.whereNull(softDeleteColumn));
 			}
 		});
 	}

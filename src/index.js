@@ -5,6 +5,7 @@ import UserError from './user_error';
 export {
 	ValidationError,
 	Validator,
+	AjvValidator,
 	Promise,
 } from 'objection';
 

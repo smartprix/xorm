@@ -65,6 +65,19 @@ Person.query().onlyTrashed();
 Person.query().forceDelete();
 ```
 
+### GraphQL Helpers
+#### `getDeleteByIdResolver()`
+returns a resolver for GraphQL delete mutation
+`deleteCategory(id: ID) { DeletedItem }`
+`Mutation: { deleteCategory: Category.getDeleteByIdResolver() }`
+
+#### `getFindByIdSubResolver()`
+returns a resolver for finding model by id. It optionally takes a propName
+argument which denotes the name of the field containing the id.
+`type Store { id: ID!, name: String!, category: Category}`
+`Query: { Store: { category: Category.getFindByIdSubResolver() } }`
+`Query: { Store: { category: Category.getFindByIdSubResolver('categoryId') } }`
+
 ### save and saveAndFetch
 `save`: inserts a model if the id column does not exist, otherwise updates it.  
 `saveAndFetch`: saves the model and then fetches it. 
