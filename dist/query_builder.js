@@ -52,6 +52,26 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		return this.patchAndFetchById(fields[id], patchFields);
 	}
 
+	whereByOr(obj) {
+		this.where(q => {
+			_lodash2.default.forEach(obj, (value, key) => {
+				q.orWhere(key, value);
+			});
+		});
+
+		return this;
+	}
+
+	whereByAnd(obj) {
+		this.orWhere(q => {
+			_lodash2.default.forEach(obj, (value, key) => {
+				q.where(key, value);
+			});
+		});
+
+		return this;
+	}
+
 	/* limitGroup(groupKey, limit, offset = 0) {
  	// TODO: Incomplete
  	// See Here: https://softonsofa.com/tweaking-eloquent-relations-how-to-get-n-related-models-per-parent/

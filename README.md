@@ -78,13 +78,27 @@ argument which denotes the name of the field containing the id.
 `Query: { Store: { category: Category.getFindByIdSubResolver() } }`
 `Query: { Store: { category: Category.getFindByIdSubResolver('categoryId') } }`
 
-### save and saveAndFetch
+### `save` and `saveAndFetch`
 `save`: inserts a model if the id column does not exist, otherwise updates it.  
 `saveAndFetch`: saves the model and then fetches it. 
 
-### wrapWhere
+### `wrapWhere`
 Wraps the where condition till now into braces  
 so `builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');` becomes `"WHERE (a = 'b' OR c = 'd') AND e = 'f'"`
+
+### `whereByOr(obj)`
+creates an and (or - or - or) condition
+```js
+q.where('id', 1).whereByOr({votes: 100, user: 'smpx'})
+// where `id` = 1 and (`votes` = 100 or `user` = 'smpx')
+```
+
+### `whereByAnd(obj)`
+creates an or (and - and - and) condition
+```js
+q.where('id', 1).whereByAnd({votes: 100, user: 'smpx'})
+// where `id` = 1 or (`votes` = 100 and `user` = 'smpx')
+```
 
 ### find Method
 `find`: find is like where except if only a single argument is given, it treats the argument as an id.
