@@ -41,6 +41,26 @@ class BaseQueryBuilder extends QueryBuilder {
 		return this.patchAndFetchById(fields[id], patchFields);
 	}
 
+	whereByOr(obj) {
+		this.where((q) => {
+			_.forEach(obj, (value, key) => {
+				q.orWhere(key, value);
+			});
+		})
+
+		return this;
+	}
+
+	whereByAnd(obj) {
+		this.orWhere((q) => {
+			_.forEach(obj, (value, key) => {
+				q.where(key, value);
+			});
+		})
+
+		return this;
+	}
+
 	/* limitGroup(groupKey, limit, offset = 0) {
 		// TODO: Incomplete
 		// See Here: https://softonsofa.com/tweaking-eloquent-relations-how-to-get-n-related-models-per-parent/
@@ -81,17 +101,41 @@ class BaseQueryBuilder extends QueryBuilder {
 		return this;
 	}
 
+	/*
+	 * Wraps the where condition till now into braces
+	 * so builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');
+	 * becomes "WHERE (a = 'b' OR c = 'd') AND e = 'f'"
+	 */
+	wrapWhere() {
+		const whereOperations = _.remove(this._operations, method => /where/i.test(method.name));
+
+		if (whereOperations.length > 1) {
+			this.where((q) => {
+				whereOperations.forEach((operation) => {
+					q[operation.name](...operation.args);
+				});
+			});
+		}
+		else if (whereOperations.length === 1) {
+			this._operations.push(whereOperations[0]);
+		}
+
+		return this;
+	}
+
 	_handleSoftDelete() {
 		if (!this.modelClass().softDelete) return;
 
-		let softDeleteColumn = this.modelClass().softDeleteColumn;
+		const softDeleteColumn = this.modelClass().softDeleteColumn;
 
 		this.onBuild((builder) => {
+			builder.wrapWhere();
+
 			if (builder.context().onlyTrashed) {
-				builder.whereNotNull(softDeleteColumn);
+				builder.where(q => q.whereNotNull(softDeleteColumn));
 			}
 			else if (!builder.context().withTrashed) {
-				builder.whereNull(softDeleteColumn);
+				builder.where(q => q.whereNull(softDeleteColumn));
 			}
 		});
 	}
@@ -139,7 +183,7 @@ class BaseQueryBuilder extends QueryBuilder {
 
 	touch() {
 		return this.patch({
-			updatedAt: new Date()
+			updatedAt: new Date(),
 		});
 	}
 

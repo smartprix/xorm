@@ -20,7 +20,20 @@ var _query_builder2 = _interopRequireDefault(_query_builder);
 
 var _utils = require('./utils');
 
+var _user_error = require('./user_error');
+
+var _user_error2 = _interopRequireDefault(_user_error);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/* eslint-disable import/no-dynamic-require, global-require */
+const httpUrlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
+'((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+'(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+'(\\#[-a-z\\d_]*)?$', 'i' // fragment locator
+);
 
 /**
 * Base class that all of our models will extend
@@ -32,9 +45,24 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 */
 class BaseModel extends _objection.Model {
 
+	static createValidator() {
+		return new _objection.AjvValidator({
+			onCreateAjv: ajv => {
+				// Here you can modify the `Ajv` instance.
+				ajv.addFormat('url', httpUrlPattern);
+			},
+			options: {
+				allErrors: true,
+				validateSchema: false,
+				ownProperties: true,
+				v5: true
+			}
+		});
+	}
+
 	// base path for requiring models in relations
-	static setBasePath(path) {
-		this.basePath = path;
+	static setBasePath(basePath) {
+		this.basePath = basePath;
 	}
 
 	static get softDeleteColumn() {
@@ -89,6 +117,16 @@ class BaseModel extends _objection.Model {
 
 	static find(...args) {
 		return this.query().find(...args);
+	}
+
+	static getFindByIdSubResolver(propName) {
+		if (!propName) propName = `${_lodash2.default.camelCase(this.name)}Id`;
+
+		return obj => this.query().findById(obj[propName]);
+	}
+
+	static getDeleteByIdResolver() {
+		return (root, obj) => this.query().deleteById(obj[this.idColumn]).then(() => ({ id: obj[this.idColumn] }));
 	}
 
 	$beforeInsert(context) {
@@ -277,12 +315,12 @@ class BaseModel extends _objection.Model {
 			}
 		};
 	}
-} /* eslint-disable import/no-dynamic-require, global-require */
+}
+
 BaseModel.timestamps = true;
 BaseModel.softDelete = false;
+BaseModel.Error = _user_error2.default;
 BaseModel.basePath = '';
-
-
 BaseModel.QueryBuilder = _query_builder2.default;
 BaseModel.RelatedQueryBuilder = _query_builder2.default;
 

@@ -1,5 +1,3 @@
-import _ from 'lodash';
-
 function isVowel(char) {
 	return (/^[aeiou]$/i).test(char);
 }
@@ -39,5 +37,7 @@ function plural(str, count = 2) {
 }
 
 export {
-	plural
+	plural,
+	isConsonant,
+	isVowel,
 };

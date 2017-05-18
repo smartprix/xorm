@@ -1,6 +1,6 @@
 {
   "name": "xorm",
-  "version": "0.2.6",
+  "version": "0.5.3",
   "description": "ORM based on ObjectionJS with some extra utilities",
   "main": "dist/index.js",
   "repository": "smartprix/xorm",
@@ -23,15 +23,15 @@
     "objection": "next"
   },
   "devDependencies": {
-    "babel-cli": "6.22.2",
-    "babel-plugin-transform-es2015-modules-commonjs": "6.22.0",
-    "babel-preset-stage-0": "6.22.0",
-    "babel-register": "6.22.0",
+    "babel-cli": "6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "6.24.1",
+    "babel-preset-stage-0": "6.24.1",
+    "babel-register": "6.24.1",
     "chai": "3.5.0",
-    "eslint": "3.14.1",
+    "eslint": "3.19.0",
     "eslint-config-smartprix": "3.1.6",
-    "knex": "^0.12.6",
-    "mocha": "3.2.0"
+    "knex": "^0.13.0",
+    "mocha": "3.4.1"
   },
   "babel": {
     "presets": [

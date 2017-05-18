@@ -1,9 +1,19 @@
 /* eslint-disable import/no-dynamic-require, global-require */
 import path from 'path';
 import _ from 'lodash';
-import {Model} from 'objection';
+import {Model, AjvValidator} from 'objection';
 import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
+import UserError from './user_error';
+
+const httpUrlPattern = new RegExp(
+	'^(https?:\\/\\/)?' + // protocol
+	'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
+	'((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+	'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+	'(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+	'(\\#[-a-z\\d_]*)?$', 'i' // fragment locator
+);
 
 /**
 * Base class that all of our models will extend
@@ -16,11 +26,27 @@ import {plural} from './utils';
 class BaseModel extends Model {
 	static timestamps = true;
 	static softDelete = false;
+	static Error = UserError;
 	static basePath = '';
 
+	static createValidator() {
+		return new AjvValidator({
+			onCreateAjv: (ajv) => {
+				// Here you can modify the `Ajv` instance.
+				ajv.addFormat('url', httpUrlPattern);
+			},
+			options: {
+				allErrors: true,
+				validateSchema: false,
+				ownProperties: true,
+				v5: true,
+			},
+		});
+	}
+
 	// base path for requiring models in relations
-	static setBasePath(path) {
-		this.basePath = path;
+	static setBasePath(basePath) {
+		this.basePath = basePath;
 	}
 
 	static get softDeleteColumn() {
@@ -75,6 +101,17 @@ class BaseModel extends Model {
 
 	static find(...args) {
 		return this.query().find(...args);
+	}
+
+	static getFindByIdSubResolver(propName) {
+		if (!propName) propName = `${_.camelCase(this.name)}Id`;
+
+		return (obj => this.query().findById(obj[propName]));
+	}
+
+	static getDeleteByIdResolver() {
+		return ((root, obj) => this.query().deleteById(obj[this.idColumn])
+				.then(() => ({id: obj[this.idColumn]})));
 	}
 
 	$beforeInsert(context) {
