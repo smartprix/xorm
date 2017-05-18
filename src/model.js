@@ -96,19 +96,30 @@ class BaseModel extends Model {
 		super.$beforeDelete(context);
 	}
 
-	$toDatabaseJson() {
-		const jsonSchema = this.constructor.getJsonSchema();
+	static getJsonSchema() {
+		// Memoize the jsonSchema but only for this class. The hasOwnProperty check
+		// will fail for subclasses and the value gets recreated.
+		if (!this.hasOwnProperty('$$jsonSchema')) {
+			// this.jsonSchema is often a getter that returns a new object each time. We need
+			// memoize it to make sure we get the same instance each time.
+			const jsonSchema = this.jsonSchema;
 
-		if (jsonSchema && jsonSchema.properties && this.constructor.pickJsonSchemaProperties) {
-			const columns = this.constructor.systemColumns || [];
-			columns.forEach((column) => {
-				jsonSchema.properties[column] = {type: ['datetime', 'string', 'int']};
-			});
+			if (jsonSchema && jsonSchema.properties) {
+				const columns = this.systemColumns || [];
+				columns.forEach((column) => {
+					jsonSchema.properties[column] = {type: ['datetime', 'string', 'int']};
+				});
+			}
 
-			return this.$$toJson(true, null, jsonSchema.properties);
+			Object.defineProperty(this, '$$jsonSchema', {
+				enumerable: false,
+				writable: true,
+				configurable: true,
+				value: jsonSchema,
+  			});
 		}
 
-		return this.$$toJson(true, this.constructor.getRelations(), null);
+		return this.$$jsonSchema;
 	}
 
 	static _getModelClass(model) {
