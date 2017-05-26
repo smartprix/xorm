@@ -132,15 +132,15 @@ class BaseModel extends _objection.Model {
 	$beforeInsert(context) {
 		super.$beforeInsert(context);
 		if (this.constructor.timestamps && !context.dontTouch) {
-			this.createdAt = new Date();
-			this.updatedAt = new Date();
+			this.createdAt = new Date().toISOString();
+			this.updatedAt = new Date().toISOString();
 		}
 	}
 
 	$beforeUpdate(opt, context) {
 		super.$beforeUpdate(opt, context);
 		if (this.constructor.timestamps && !context.dontTouch) {
-			this.updatedAt = new Date();
+			this.updatedAt = new Date().toISOString();
 		}
 	}
 
@@ -159,7 +159,7 @@ class BaseModel extends _objection.Model {
 			if (jsonSchema && jsonSchema.properties) {
 				const columns = this.systemColumns || [];
 				columns.forEach(column => {
-					jsonSchema.properties[column] = { type: ['datetime', 'string', 'int'] };
+					jsonSchema.properties[column] = { type: ['datetime', 'string', 'int', 'null'] };
 				});
 			}
 

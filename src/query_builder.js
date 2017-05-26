@@ -124,9 +124,10 @@ class BaseQueryBuilder extends QueryBuilder {
 	}
 
 	_handleSoftDelete() {
-		if (!this.modelClass().softDelete) return;
+		const model = this.modelClass();
+		if (!model.softDelete) return;
 
-		const softDeleteColumn = this.modelClass().softDeleteColumn;
+		const softDeleteColumn = `${model.tableName}.${model.softDeleteColumn}`;
 
 		this.onBuild((builder) => {
 			builder.wrapWhere();
@@ -161,7 +162,7 @@ class BaseQueryBuilder extends QueryBuilder {
 	softDelete() {
 		return this.dontTouch()
 			.patch({
-				[this.modelClass().softDeleteColumn]: new Date(),
+				[this.modelClass().softDeleteColumn]: new Date().toISOString(),
 			});
 	}
 
@@ -183,7 +184,7 @@ class BaseQueryBuilder extends QueryBuilder {
 
 	touch() {
 		return this.patch({
-			updatedAt: new Date(),
+			updatedAt: new Date().toISOString(),
 		});
 	}
 
