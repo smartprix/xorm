@@ -127,7 +127,7 @@ class BaseQueryBuilder extends QueryBuilder {
 		const model = this.modelClass();
 		if (!model.softDelete) return;
 
-		const softDeleteColumn = model.tableName + '.`' + model.softDeleteColumn + '`';
+		const softDeleteColumn = '`' + model.tableName + '`.`' + model.softDeleteColumn + '`';
 
 		this.onBuild((builder) => {
 			if (!builder.isFindQuery() || builder.context().withTrashed) return;
@@ -135,10 +135,10 @@ class BaseQueryBuilder extends QueryBuilder {
 			builder.wrapWhere();
 
 			if (builder.context().onlyTrashed) {
-				builder.whereRaw(`(${softDeleteColumn} IS NULL)`);
+				builder.whereRaw(`(${softDeleteColumn} is null)`);
 			}
 			else {
-				builder.whereRaw(`(${softDeleteColumn} IS NOT NULL)`);
+				builder.whereRaw(`(${softDeleteColumn} is not null)`);
 			}
 		});
 	}
