@@ -135,10 +135,10 @@ class BaseQueryBuilder extends QueryBuilder {
 			builder.wrapWhere();
 
 			if (builder.context().onlyTrashed) {
-				builder.whereRaw(`(${softDeleteColumn} is null)`);
+				builder.whereRaw(`(${softDeleteColumn} is not null)`);
 			}
 			else {
-				builder.whereRaw(`(${softDeleteColumn} is not null)`);
+				builder.whereRaw(`(${softDeleteColumn} is null)`);
 			}
 		});
 	}
