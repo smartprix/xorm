@@ -134,15 +134,17 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		const model = this.modelClass();
 		if (!model.softDelete) return;
 
-		const softDeleteColumn = `${model.tableName}.${model.softDeleteColumn}`;
+		const softDeleteColumn = model.tableName + '.`' + model.softDeleteColumn + '`';
 
 		this.onBuild(builder => {
+			if (!builder.isFindQuery() || builder.context().withTrashed) return;
+
 			builder.wrapWhere();
 
 			if (builder.context().onlyTrashed) {
-				builder.where(q => q.whereNotNull(softDeleteColumn));
-			} else if (!builder.context().withTrashed) {
-				builder.where(q => q.whereNull(softDeleteColumn));
+				builder.whereRaw(`(${softDeleteColumn} IS NULL)`);
+			} else {
+				builder.whereRaw(`(${softDeleteColumn} IS NOT NULL)`);
 			}
 		});
 	}
