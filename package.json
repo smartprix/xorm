@@ -19,6 +19,7 @@
   "author": "Hitesh Khandelwal <hitesh@smartprix.com> (http://www.smartprix.com/)",
   "license": "ISC",
   "dependencies": {
+    "dataloader": "^1.3.0",
     "lodash": "^4.17.4",
     "objection": "next"
   },

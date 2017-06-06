@@ -9,6 +9,16 @@ class BaseQueryBuilder extends QueryBuilder {
 		this._handleScopes();
 	}
 
+	loaderContext(ctx) {
+		this.context().loaderContext = ctx;
+	}
+
+	findById(...args) {
+		return this.modelClass()
+			.getIdLoader(this.context().loaderContext || null)
+			.load(args);
+	}
+
 	find(...args) {
 		if (args.length === 1) {
 			return this.findById(...args);
@@ -46,7 +56,7 @@ class BaseQueryBuilder extends QueryBuilder {
 			_.forEach(obj, (value, key) => {
 				q.orWhere(key, value);
 			});
-		})
+		});
 
 		return this;
 	}
@@ -56,7 +66,7 @@ class BaseQueryBuilder extends QueryBuilder {
 			_.forEach(obj, (value, key) => {
 				q.where(key, value);
 			});
-		})
+		});
 
 		return this;
 	}

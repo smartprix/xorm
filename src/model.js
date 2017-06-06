@@ -2,6 +2,7 @@
 import path from 'path';
 import _ from 'lodash';
 import {Model, AjvValidator} from 'objection';
+import DataLoader from 'dataloader';
 import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
 import UserError from './user_error';
@@ -14,6 +15,53 @@ const httpUrlPattern = new RegExp(
 	'(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
 	'(\\#[-a-z\\d_]*)?$', 'i' // fragment locator
 );
+
+const ajvValidator = new AjvValidator({
+	onCreateAjv: (ajv) => {
+		// Here you can modify the `Ajv` instance.
+		ajv.addFormat('url', httpUrlPattern);
+	},
+	options: {
+		allErrors: true,
+		validateSchema: false,
+		ownProperties: true,
+		v5: true,
+	},
+});
+
+function mapResults(results, keys, columnName) {
+	const resultHash = {};
+	const mappedResults = [];
+
+	for (const result of results) {
+		resultHash[result[columnName]] = result;
+	}
+
+	for (const key of keys) {
+		mappedResults.push(resultHash[key] || null);
+	}
+
+	return mappedResults;
+}
+
+function mapManyResults(results, keys, columnName) {
+	const resultHash = {};
+	const mappedResults = [];
+
+	for (const result of results) {
+		const column = result[columnName];
+		resultHash[column] = resultHash[column] || [];
+		resultHash[column].push(result);
+	}
+
+	for (const key of keys) {
+		mappedResults.push(resultHash[key] || []);
+	}
+
+	return mappedResults;
+}
+
+let globalLoaderContext = {};
 
 /**
 * Base class that all of our models will extend
@@ -28,20 +76,91 @@ class BaseModel extends Model {
 	static softDelete = false;
 	static Error = UserError;
 	static basePath = '';
+	static dataLoaders = {};
 
 	static createValidator() {
-		return new AjvValidator({
-			onCreateAjv: (ajv) => {
-				// Here you can modify the `Ajv` instance.
-				ajv.addFormat('url', httpUrlPattern);
-			},
-			options: {
-				allErrors: true,
-				validateSchema: false,
-				ownProperties: true,
-				v5: true,
-			},
-		});
+		return ajvValidator;
+	}
+
+	static setGlobalLoaderContext(ctx) {
+		globalLoaderContext = ctx;
+	}
+
+	static getLoader(columnName, ctx = null) {
+		const loaderName = `${this.tableName}${columnName}DataLoader`;
+		if (!ctx) {
+			ctx = globalLoaderContext;
+		}
+
+		if (!ctx[loaderName]) {
+			ctx[loaderName] = new DataLoader(async (keys) => {
+				const results = await this.query().whereIn(columnName, _.uniq(keys));
+				return mapResults(results, keys, columnName);
+			});
+		}
+
+		return ctx[loaderName];
+	}
+
+	static getManyLoader(columnName, ctx = null, options = {}) {
+		let loaderName = `${this.tableName}${columnName}DataLoader`;
+		if (!ctx) {
+			ctx = globalLoaderContext;
+		}
+
+		if (options.modify) {
+			if (_.isPlainObject(options.modify)) {
+				loaderName += JSON.stringify(options.modify);
+			}
+			else {
+				loaderName += String(options.modify);
+			}
+		}
+
+		if (!ctx[loaderName]) {
+			ctx[loaderName] = new DataLoader(async (keys) => {
+				const query = this.query().whereIn(columnName, _.uniq(keys));
+				if (options.modify) {
+					if (_.isPlainObject(options.modify)) {
+						query.where(options.modify);
+					}
+					else {
+						query.modify(options.modify);
+					}
+				}
+				const results = await query;
+				return mapManyResults(results, keys, columnName);
+			});
+		}
+
+		return ctx[loaderName];
+	}
+
+	static getRelationLoader(relationName, ctx = null, options = {}) {
+		const loaderName = `${this.tableName}Rel${relationName}DataLoader`;
+		if (!ctx) {
+			ctx = globalLoaderContext;
+		}
+
+		if (!ctx[loaderName]) {
+			ctx[loaderName] = new DataLoader(async (keys) => {
+				const objs = keys.map((key) => {
+					const obj = new this();
+					obj[options.ownerCol || this.idColumn] = key;
+					return obj;
+				});
+
+				const query = this.loadRelated(objs, relationName);
+				const results = await query;
+				return results.map(result => result[relationName]);
+			});
+		}
+
+		return ctx[loaderName];
+	}
+
+	static getIdLoader(ctx = null) {
+		return this.getLoader(this.idColumn, ctx);
 	}
 
 	// base path for requiring models in relations
@@ -58,17 +177,25 @@ class BaseModel extends Model {
 	}
 
 	static get systemColumns() {
-		const columns = [];
-		if (this.timestamps) {
-			columns.push('createdAt');
-			columns.push('updatedAt');
+		if (!this._systemColumns) {
+			const columns = [];
+			if (this.timestamps) {
+				columns.push('createdAt');
+				columns.push('updatedAt');
+			}
+
+			if (this.softDelete) {
+				columns.push(this.softDeleteColumn);
+			}
+
+			this._systemColumns = columns;
 		}
 
-		if (this.softDelete) {
-			columns.push(this.softDeleteColumn);
-		}
+		return this._systemColumns;
+	}
 
-		return columns;
+	static set systemColumns(columns) {
+		this._systemColumns = columns;
 	}
 
 	static get tableName() {
@@ -103,14 +230,93 @@ class BaseModel extends Model {
 		return this.query().find(...args);
 	}
 
-	static getFindByIdSubResolver(propName) {
-		if (!propName) propName = `${_.camelCase(this.name)}Id`;
+	static getFindOneResolver(options = {}) {
+		return (async (root, args) => {
+			if (args[this.idColumn]) {
+				return this.getIdLoader(options.ctx).load(args[this.idColumn]);
+			}
 
-		return (obj => this.query().findById(obj[propName]));
+			const keys = Object.keys(args);
+			if (!keys.length) return null;
+
+			if (keys.length === 1) {
+				return this.getLoader(keys[0], options.ctx).load(args[keys[0]]);
+			}
+
+			const query = this.query();
+			keys.forEach((key) => {
+				query.where(key, args[key]);
+			});
+
+			return query.first();
+		});
+	}
+
+	static getRelationResolver(relationName, options = {}) {
+		return (async (obj) => {
+			const relation = this.getRelation(relationName);
+			if (!relation) {
+				throw new Error(`relation ${relationName} is not defined in ${this.name}`);
+			}
+
+			if (
+				relation instanceof Model.BelongsToOneRelation ||
+				relation instanceof Model.HasOneRelation
+			) {
+				if (relation.relatedCol.length === 1 && relation.ownerCol.length === 1) {
+					return relation.relatedModelClass
+						.getLoader(relation.relatedCol[0])
+						.load(obj[relation.ownerCol[0]]);
+				}
+			}
+			else if (relation instanceof Model.HasManyRelation) {
+				const modify = relation.modify;
+				if (
+					relation.relatedCol.length === 1 &&
+					relation.ownerCol.length === 1
+				) {
+					if (String(modify).indexOf('noop') !== -1) {
+						return relation.relatedModelClass
+							.getManyLoader(relation.relatedCol[0], options.ctx)
+							.load(obj[relation.ownerCol[0]]);
+					}
+
+					return relation.relatedModelClass
+						.getManyLoader(relation.relatedCol[0], options.ctx, {
+							modify,
+						})
+						.load(obj[relation.ownerCol[0]]);
+				}
+			}
+			else if (
+				relation instanceof Model.ManyToManyRelation ||
+				relation instanceof Model.HasOneThroughRelation
+			) {
+				if (
+					relation.relatedCol.length === 1 &&
+					relation.ownerCol.length === 1
+				) {
+					return this.getRelationLoader(
+						relationName,
+						options.ctx,
+						{ownerCol: relation.ownerCol},
+					).load(obj[this.idColumn]);
+				}
+			}
+
+			if (obj[relationName] !== undefined) return obj[relationName];
+			await obj.$loadRelated(relationName);
+			return obj[relationName] || null;
+		});
+	}
+
+	static getFindByIdSubResolver(propName, options = {}) {
+		if (!propName) propName = `${_.camelCase(this.name)}Id`;
+		return (async obj => this.getIdLoader(options.ctx).load(obj[propName]));
 	}
 
 	static getDeleteByIdResolver() {
-		return ((root, obj) => this.query().deleteById(obj[this.idColumn])
+		return (async (root, obj) => this.query().deleteById(obj[this.idColumn])
 				.then(() => ({id: obj[this.idColumn]})));
 	}
 
@@ -136,6 +342,7 @@ class BaseModel extends Model {
 	static getJsonSchema() {
 		// Memoize the jsonSchema but only for this class. The hasOwnProperty check
 		// will fail for subclasses and the value gets recreated.
+		// eslint-disable-next-line
 		if (!this.hasOwnProperty('$$jsonSchema')) {
 			// this.jsonSchema is often a getter that returns a new object each time. We need
 			// memoize it to make sure we get the same instance each time.
@@ -153,7 +360,7 @@ class BaseModel extends Model {
 				writable: true,
 				configurable: true,
 				value: jsonSchema,
-  			});
+			});
 		}
 
 		return this.$$jsonSchema;
@@ -179,7 +386,7 @@ class BaseModel extends Model {
 		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_.camelCase(this.name)}${_.upperFirst(this.idColumn)}`;
 		// Pet.id
 		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;
-		const filter = options.filter || null;
+		const filter = options.filter || options.modify || null;
 
 		this._relationMappings[name] = {
 			relation: Model.BelongsToOneRelation,
@@ -206,7 +413,7 @@ class BaseModel extends Model {
 		const joinFrom = options.joinFrom || `${this.tableName}.${_.camelCase(modelClass.name)}${_.upperFirst(modelClass.idColumn)}`;
 		// Pet.id
 		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
-		const filter = options.filter || null;
+		const filter = options.filter || options.modify || null;
 
 		this._relationMappings[name] = {
 			relation: Model.HasOneRelation,
@@ -233,7 +440,7 @@ class BaseModel extends Model {
 		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_.camelCase(this.name)}${_.upperFirst(this.idColumn)}`;
 		// Person.id
 		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;
-		const filter = options.filter || null;
+		const filter = options.filter || options.modify || null;
 
 		this._relationMappings[name] = {
 			relation: Model.HasManyRelation,
@@ -260,7 +467,7 @@ class BaseModel extends Model {
 		const joinFrom = options.joinFrom || `${this.tableName}.${this.idColumn}`;
 		// Pet.id
 		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
-		const filter = options.filter || null;
+		const filter = options.filter || options.modify || null;
 
 		options.through = options.through || {};
 
@@ -272,13 +479,21 @@ class BaseModel extends Model {
 			throughTable = options.through.table || throughClass.tableName;
 		}
 		else {
-			// Person_Pet
-			throughTable = options.through.table || `${this.name}_${modelClass.name}`;
+			// PersonPetMap
+			throughTable = options.through.table;
+			if (!throughTable) {
+				if (this.name < modelClass.name) {
+					throughTable = `${this.name}${modelClass.name}Map`;
+				}
+				else {
+					throughTable = `${modelClass.name}${this.name}Map`;
+				}
+			}
 		}
 
-		// Person_Pet.personId
+		// PersonPetMap.personId
 		const throughFrom = options.through.from || `${throughTable}.${_.camelCase(this.name)}${_.upperFirst(this.idColumn)}`;
-		// Person_Pet.petId
+		// PersonPetMap.petId
 		const throughTo = options.through.to || `${throughTable}.${_.camelCase(modelClass.name)}${_.upperFirst(modelClass.idColumn)}`;
 
 		const throughExtra = options.through.extra || null;
