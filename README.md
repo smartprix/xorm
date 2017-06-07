@@ -1,8 +1,8 @@
 ## xorm
 NodeJS ORM based on ObjectionJS with some extra utilities
 
-ObjectionJS documentation: http://vincit.github.io/objection.js/
-ObjectionJS Repo: https://github.com/Vincit/objection.js/
+ObjectionJS documentation: http://vincit.github.io/objection.js/  
+ObjectionJS Repo: https://github.com/Vincit/objection.js/  
 
 ## Extra Features
 Xorm adds some more functionalities in ObjectionJS.
@@ -78,8 +78,8 @@ returns a resolver for GraphQL query where you query the item by a single unique
 #### `getRelationResolver(relationName)`
 returns a resolver for a relation that is defined in the model.
 
-`type Store { id: ID!, name: String!, category: Category }` 
-`Query: { Store: { category: Store.getRelationResolver('category') } }` 
+`type Store { id: ID!, name: String!, category: Category }`  
+`Store: { category: Store.getRelationResolver('category') }`  
 
 #### `getDeleteByIdResolver()`
 returns a resolver for GraphQL delete mutation
@@ -92,8 +92,8 @@ returns a resolver for finding model by id. It optionally takes a propName
 argument which denotes the name of the field containing the id.
 
 `type Store { id: ID!, name: String!, category: Category }`  
-`Query: { Store: { category: Category.getFindByIdSubResolver() } }`  
-`Query: { Store: { category: Category.getFindByIdSubResolver('categoryId') } }`  
+`Store: { category: Category.getFindByIdSubResolver() }`  
+`Store: { category: Category.getFindByIdSubResolver('categoryId') }`  
 
 #### `getIdLoader(ctx)`
 returns a Data Loader for batching and caching purposes. You can optionally give it a context to
@@ -217,7 +217,7 @@ class Pet extends Model {
         this.belongsTo(Person);
         this.hasManyThrough(Pet, {
         	name: 'siblings',
-            through: {
+			through: {
             	table: 'Pet_Siblings',
                 from: 'pet_id',
                 to: 'sibling_id',
