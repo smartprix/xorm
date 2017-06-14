@@ -24,8 +24,8 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		this.context().loaderContext = ctx;
 	}
 
-	findById(...args) {
-		return this.modelClass().getIdLoader(this.context().loaderContext || null).load(args);
+	findById(id) {
+		return this.modelClass().getIdLoader(this.context().loaderContext || null).load(id);
 	}
 
 	find(...args) {
