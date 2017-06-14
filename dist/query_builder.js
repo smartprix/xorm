@@ -150,9 +150,9 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 			builder.wrapWhere();
 
 			if (builder.context().onlyTrashed) {
-				builder.whereRaw(`(${softDeleteColumn} is not null)`);
+				builder.where(q => q.whereNotNull(softDeleteColumn));
 			} else {
-				builder.whereRaw(`(${softDeleteColumn} is null)`);
+				builder.where(q => q.whereNull(softDeleteColumn));
 			}
 		});
 	}
