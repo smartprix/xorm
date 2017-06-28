@@ -16,19 +16,6 @@ const httpUrlPattern = new RegExp(
 	'(\\#[-a-z\\d_]*)?$', 'i' // fragment locator
 );
 
-const ajvValidator = new AjvValidator({
-	onCreateAjv: (ajv) => {
-		// Here you can modify the `Ajv` instance.
-		ajv.addFormat('url', httpUrlPattern);
-	},
-	options: {
-		allErrors: true,
-		validateSchema: false,
-		ownProperties: true,
-		v5: true,
-	},
-});
-
 function mapResults(results, keys, columnName) {
 	const resultHash = {};
 	const mappedResults = [];
@@ -79,7 +66,18 @@ class BaseModel extends Model {
 	static dataLoaders = {};
 
 	static createValidator() {
-		return ajvValidator;
+		return new AjvValidator({
+			onCreateAjv: (ajv) => {
+				// Here you can modify the `Ajv` instance.
+				ajv.addFormat('url', httpUrlPattern);
+			},
+			options: {
+				allErrors: true,
+				validateSchema: false,
+				ownProperties: true,
+				v5: true,
+			},
+		});;
 	}
 
 	static setGlobalLoaderContext(ctx) {

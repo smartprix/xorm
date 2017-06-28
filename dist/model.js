@@ -41,19 +41,6 @@ const httpUrlPattern = new RegExp('^(https?:\\/\\/)?' + // protocol
 '(\\#[-a-z\\d_]*)?$', 'i' // fragment locator
 );
 
-const ajvValidator = new _objection.AjvValidator({
-	onCreateAjv: ajv => {
-		// Here you can modify the `Ajv` instance.
-		ajv.addFormat('url', httpUrlPattern);
-	},
-	options: {
-		allErrors: true,
-		validateSchema: false,
-		ownProperties: true,
-		v5: true
-	}
-});
-
 function mapResults(results, keys, columnName) {
 	const resultHash = {};
 	const mappedResults = [];
@@ -99,7 +86,18 @@ let globalLoaderContext = {};
 class BaseModel extends _objection.Model {
 
 	static createValidator() {
-		return ajvValidator;
+		return new _objection.AjvValidator({
+			onCreateAjv: ajv => {
+				// Here you can modify the `Ajv` instance.
+				ajv.addFormat('url', httpUrlPattern);
+			},
+			options: {
+				allErrors: true,
+				validateSchema: false,
+				ownProperties: true,
+				v5: true
+			}
+		});;
 	}
 
 	static setGlobalLoaderContext(ctx) {
