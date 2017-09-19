@@ -97,7 +97,7 @@ class BaseModel extends _objection.Model {
 				ownProperties: true,
 				v5: true
 			}
-		});;
+		});
 	}
 
 	static setGlobalLoaderContext(ctx) {
@@ -108,8 +108,10 @@ class BaseModel extends _objection.Model {
 		var _this = this;
 
 		const loaderName = `${this.tableName}${columnName}DataLoader`;
+		let cache = true;
 		if (!ctx) {
 			ctx = globalLoaderContext;
+			cache = false;
 		}
 
 		if (!ctx[loaderName]) {
@@ -122,7 +124,7 @@ class BaseModel extends _objection.Model {
 				return function (_x) {
 					return _ref.apply(this, arguments);
 				};
-			})());
+			})(), { cache });
 		}
 
 		return ctx[loaderName];
@@ -132,8 +134,10 @@ class BaseModel extends _objection.Model {
 		var _this2 = this;
 
 		let loaderName = `${this.tableName}${columnName}DataLoader`;
+		let cache = true;
 		if (!ctx) {
 			ctx = globalLoaderContext;
+			cache = false;
 		}
 
 		if (options.modify) {
@@ -162,7 +166,7 @@ class BaseModel extends _objection.Model {
 				return function (_x2) {
 					return _ref2.apply(this, arguments);
 				};
-			})());
+			})(), { cache });
 		}
 
 		return ctx[loaderName];
@@ -172,8 +176,10 @@ class BaseModel extends _objection.Model {
 		var _this3 = this;
 
 		const loaderName = `${this.tableName}Rel${relationName}DataLoader`;
+		let cache = true;
 		if (!ctx) {
 			ctx = globalLoaderContext;
+			cache = false;
 		}
 
 		if (!ctx[loaderName]) {
@@ -195,7 +201,7 @@ class BaseModel extends _objection.Model {
 				return function (_x3) {
 					return _ref3.apply(this, arguments);
 				};
-			})());
+			})(), { cache });
 		}
 
 		return ctx[loaderName];

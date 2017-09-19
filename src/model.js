@@ -77,7 +77,7 @@ class BaseModel extends Model {
 				ownProperties: true,
 				v5: true,
 			},
-		});;
+		});
 	}
 
 	static setGlobalLoaderContext(ctx) {
@@ -86,15 +86,17 @@ class BaseModel extends Model {
 
 	static getLoader(columnName, ctx = null) {
 		const loaderName = `${this.tableName}${columnName}DataLoader`;
+		let cache = true;
 		if (!ctx) {
 			ctx = globalLoaderContext;
+			cache = false;
 		}
 
 		if (!ctx[loaderName]) {
 			ctx[loaderName] = new DataLoader(async (keys) => {
 				const results = await this.query().whereIn(columnName, _.uniq(keys));
 				return mapResults(results, keys, columnName);
-			});
+			}, {cache});
 		}
 
 		return ctx[loaderName];
@@ -102,8 +104,10 @@ class BaseModel extends Model {
 
 	static getManyLoader(columnName, ctx = null, options = {}) {
 		let loaderName = `${this.tableName}${columnName}DataLoader`;
+		let cache = true;
 		if (!ctx) {
 			ctx = globalLoaderContext;
+			cache = false;
 		}
 
 		if (options.modify) {
@@ -128,7 +132,7 @@ class BaseModel extends Model {
 				}
 				const results = await query;
 				return mapManyResults(results, keys, columnName);
-			});
+			}, {cache});
 		}
 
 		return ctx[loaderName];
@@ -136,8 +140,10 @@ class BaseModel extends Model {
 
 	static getRelationLoader(relationName, ctx = null, options = {}) {
 		const loaderName = `${this.tableName}Rel${relationName}DataLoader`;
+		let cache = true;
 		if (!ctx) {
 			ctx = globalLoaderContext;
+			cache = false;
 		}
 
 		if (!ctx[loaderName]) {
@@ -151,7 +157,7 @@ class BaseModel extends Model {
 				const query = this.loadRelated(objs, relationName);
 				const results = await query;
 				return results.map(result => result[relationName]);
-			});
+			}, {cache});
 		}
 
 		return ctx[loaderName];
