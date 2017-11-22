@@ -263,49 +263,47 @@ class BaseModel extends Model {
 				throw new Error(`relation ${relationName} is not defined in ${this.name}`);
 			}
 
+			const relatedCols = (relation.relatedProp && relation.relatedProp.cols) || [];
+			const ownerCols = (relation.ownerProp && relation.ownerProp.cols) || [];
+
+			// Only pass single column relations through data loader
+			if (relatedCols.length !== 1 || ownerCols.length !== 1) {
+				if (obj[relationName] !== undefined) return obj[relationName];
+				await obj.$loadRelated(relationName);
+				return obj[relationName] || null;
+			}
+
 			if (
 				relation instanceof Model.BelongsToOneRelation ||
 				relation instanceof Model.HasOneRelation
 			) {
-				if (relation.relatedCol.length === 1 && relation.ownerCol.length === 1) {
 					return relation.relatedModelClass
-						.getLoader(relation.relatedCol[0])
-						.load(obj[relation.ownerCol[0]]);
-				}
+						.getLoader(relatedCols[0])
+						.load(obj[ownerCols[0]]);
 			}
 			else if (relation instanceof Model.HasManyRelation) {
 				const modify = relation.modify;
-				if (
-					relation.relatedCol.length === 1 &&
-					relation.ownerCol.length === 1
-				) {
-					if (String(modify).indexOf('noop') !== -1) {
-						return relation.relatedModelClass
-							.getManyLoader(relation.relatedCol[0], options.ctx)
-							.load(obj[relation.ownerCol[0]]);
-					}
-
+				if (String(modify).indexOf('noop') !== -1) {
 					return relation.relatedModelClass
-						.getManyLoader(relation.relatedCol[0], options.ctx, {
-							modify,
-						})
-						.load(obj[relation.ownerCol[0]]);
+						.getManyLoader(relatedCols[0], options.ctx)
+						.load(obj[ownerCols[0]]);
 				}
+
+				return relation.relatedModelClass
+					.getManyLoader(relatedCols[0], options.ctx, {
+						modify,
+					})
+					.load(obj[ownerCols[0]]);
 			}
 			else if (
 				relation instanceof Model.ManyToManyRelation ||
 				relation instanceof Model.HasOneThroughRelation
 			) {
-				if (
-					relation.relatedCol.length === 1 &&
-					relation.ownerCol.length === 1
-				) {
 					return this.getRelationLoader(
 						relationName,
 						options.ctx,
-						{ownerCol: relation.ownerCol},
+						{ownerCol: ownerCol[0]},
 					).load(obj[this.idColumn]);
-				}
 			}
 
 			if (obj[relationName] !== undefined) return obj[relationName];
