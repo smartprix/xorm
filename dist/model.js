@@ -340,7 +340,7 @@ class BaseModel extends _objection.Model {
 						modify
 					}).load(obj[ownerCols[0]]);
 				} else if (relation instanceof _objection.Model.ManyToManyRelation || relation instanceof _objection.Model.HasOneThroughRelation) {
-					return _this5.getRelationLoader(relationName, options.ctx, { ownerCol: ownerCol[0] }).load(obj[_this5.idColumn]);
+					return _this5.getRelationLoader(relationName, options.ctx, { ownerCol: ownerCols[0] }).load(obj[_this5.idColumn]);
 				}
 
 				if (obj[relationName] !== undefined) return obj[relationName];

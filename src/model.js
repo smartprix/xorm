@@ -302,7 +302,7 @@ class BaseModel extends Model {
 					return this.getRelationLoader(
 						relationName,
 						options.ctx,
-						{ownerCol: ownerCol[0]},
+						{ownerCol: ownerCols[0]},
 					).load(obj[this.idColumn]);
 			}
 
