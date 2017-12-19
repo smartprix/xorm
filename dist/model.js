@@ -442,15 +442,15 @@ class BaseModel extends _objection.Model {
 
 		// this.BelongsTo(Person) (this = Pet)
 		// Pet Belongs To Person
-		// This Means => Pet.id = Person.petId
+		// This Means => Pet.personId = Person.id
 		// will be accessible through Pet.person
 
 		// Pet.person
 		const name = options.name || _lodash2.default.camelCase(modelClass.name);
 		// Person.petId
-		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_lodash2.default.camelCase(this.name)}${_lodash2.default.upperFirst(this.idColumn)}`;
+		const joinFrom = options.joinFrom || `${this.tableName}.${_lodash2.default.camelCase(modelClass.name)}${_lodash2.default.upperFirst(modelClass.idColumn)}`;
 		// Pet.id
-		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;
+		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
 		const filter = options.filter || options.modify || null;
 
 		this._relationMappings[name] = {
@@ -469,15 +469,15 @@ class BaseModel extends _objection.Model {
 
 		// this.HasOne(Pet) (this = Person)
 		// Person Has One Pet
-		// This Means => Person.petId = Pet.id
+		// This Means => Person.id = Pet.personId
 		// will be accessible through Person.pet
 
 		// Person.pet
 		const name = options.name || _lodash2.default.camelCase(modelClass.name);
 		// Person.petId
-		const joinFrom = options.joinFrom || `${this.tableName}.${_lodash2.default.camelCase(modelClass.name)}${_lodash2.default.upperFirst(modelClass.idColumn)}`;
+		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_lodash2.default.camelCase(this.name)}${_lodash2.default.upperFirst(this.idColumn)}`;
 		// Pet.id
-		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
+		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;
 		const filter = options.filter || options.modify || null;
 
 		this._relationMappings[name] = {

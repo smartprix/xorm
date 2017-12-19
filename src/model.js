@@ -379,15 +379,15 @@ class BaseModel extends Model {
 
 		// this.BelongsTo(Person) (this = Pet)
 		// Pet Belongs To Person
-		// This Means => Pet.id = Person.petId
+		// This Means => Pet.personId = Person.id
 		// will be accessible through Pet.person
 
 		// Pet.person
 		const name = options.name || _.camelCase(modelClass.name);
 		// Person.petId
-		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_.camelCase(this.name)}${_.upperFirst(this.idColumn)}`;
+		const joinFrom = options.joinFrom || `${this.tableName}.${_.camelCase(modelClass.name)}${_.upperFirst(modelClass.idColumn)}`;
 		// Pet.id
-		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;
+		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
 		const filter = options.filter || options.modify || null;
 
 		this._relationMappings[name] = {
@@ -406,15 +406,15 @@ class BaseModel extends Model {
 
 		// this.HasOne(Pet) (this = Person)
 		// Person Has One Pet
-		// This Means => Person.petId = Pet.id
+		// This Means => Person.id = Pet.personId
 		// will be accessible through Person.pet
 
 		// Person.pet
 		const name = options.name || _.camelCase(modelClass.name);
 		// Person.petId
-		const joinFrom = options.joinFrom || `${this.tableName}.${_.camelCase(modelClass.name)}${_.upperFirst(modelClass.idColumn)}`;
+		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_.camelCase(this.name)}${_.upperFirst(this.idColumn)}`;
 		// Pet.id
-		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
+		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;
 		const filter = options.filter || options.modify || null;
 
 		this._relationMappings[name] = {
