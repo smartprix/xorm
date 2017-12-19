@@ -7,6 +7,14 @@ export {
 	Validator,
 	AjvValidator,
 	Promise,
+	transaction,
+	compose,
+	mixin,
+	ref,
+	lit,
+	raw,
+	snakeCaseMappers,
+	knexSnakeCaseMappers,
 } from 'objection';
 
 export {

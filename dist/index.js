@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
-exports.UserError = exports.QueryBuilder = exports.Model = exports.Promise = exports.AjvValidator = exports.Validator = exports.ValidationError = undefined;
+exports.UserError = exports.QueryBuilder = exports.Model = exports.knexSnakeCaseMappers = exports.snakeCaseMappers = exports.raw = exports.lit = exports.ref = exports.mixin = exports.compose = exports.transaction = exports.Promise = exports.AjvValidator = exports.Validator = exports.ValidationError = undefined;
 
 var _objection = require('objection');
 
@@ -29,6 +29,54 @@ Object.defineProperty(exports, 'Promise', {
 	enumerable: true,
 	get: function () {
 		return _objection.Promise;
+	}
+});
+Object.defineProperty(exports, 'transaction', {
+	enumerable: true,
+	get: function () {
+		return _objection.transaction;
+	}
+});
+Object.defineProperty(exports, 'compose', {
+	enumerable: true,
+	get: function () {
+		return _objection.compose;
+	}
+});
+Object.defineProperty(exports, 'mixin', {
+	enumerable: true,
+	get: function () {
+		return _objection.mixin;
+	}
+});
+Object.defineProperty(exports, 'ref', {
+	enumerable: true,
+	get: function () {
+		return _objection.ref;
+	}
+});
+Object.defineProperty(exports, 'lit', {
+	enumerable: true,
+	get: function () {
+		return _objection.lit;
+	}
+});
+Object.defineProperty(exports, 'raw', {
+	enumerable: true,
+	get: function () {
+		return _objection.raw;
+	}
+});
+Object.defineProperty(exports, 'snakeCaseMappers', {
+	enumerable: true,
+	get: function () {
+		return _objection.snakeCaseMappers;
+	}
+});
+Object.defineProperty(exports, 'knexSnakeCaseMappers', {
+	enumerable: true,
+	get: function () {
+		return _objection.knexSnakeCaseMappers;
 	}
 });
 
