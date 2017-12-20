@@ -420,7 +420,22 @@ class BaseModel extends Model {
 
 	static _getModelClass(model) {
 		if (!_.isString(model)) return model;
-		const modelClass = require(path.resolve(this.basePath, model));
+
+		// if an all model object is given, take model from that object
+		if (this.allModels && (model in this.allModels)) {
+			return this.allModels[model];
+		}
+
+		// try to require model by including the model file directly
+		let modelPath;
+		try {
+			modelPath = require.resolve(path.resolve(this.basePath, model) + '/' + model);
+		}
+		catch (e) {
+			modelPath = require.resolve(path.resolve(this.basePath, model));
+		}
+
+		const modelClass = require(modelPath);
 		return modelClass.default || modelClass;
 	}
 
