@@ -256,59 +256,109 @@ class BaseModel extends Model {
 		});
 	}
 
+	/**
+	 * beforeResolve can be used to return a modified item to use for resolving
+	 * called before resolving (using graphql) a particular item
+	 * @param  {Object} args arguments passed from graphql query
+	 * @return {Object}      a xorm model object
+	 */
+	beforeResolve(args) {	// eslint-disable-line
+		return this;
+	}
+
+	/**
+	 * afterResolve can be used to modify the item we got from the resolver
+	 * called after resolving (using graphql) a particular item
+	 * @param  {Object} args arguments passed from graphql query
+	 * @return {Object}      a xorm model object
+	 */
+	afterResolve(args) {	// eslint-disable-line
+		return this;
+	}
+
 	static getRelationResolver(relationName, options = {}) {
-		return (async (obj) => {
-			const relation = this.getRelation(relationName);
-			if (!relation) {
-				throw new Error(`relation ${relationName} is not defined in ${this.name}`);
+		const handleResult = (obj, args) => {
+			if (!obj) return null;
+			if (Array.isArray(obj)) {
+				return obj.map(item => handleResult(item, args));
+			}
+			if (obj.afterResolve) {
+				return obj.afterResolve(args);
+			}
+			return obj;
+		};
+
+		const relation = this.getRelation(relationName);
+		if (!relation) {
+			throw new Error(`relation ${relationName} is not defined in ${this.name}`);
+		}
+
+		const relatedCols = (relation.relatedProp && relation.relatedProp.cols) || [];
+		const ownerCols = (relation.ownerProp && relation.ownerProp.cols) || [];
+
+		return (async (obj, args) => {
+			if (obj.beforeResolve) {
+				obj = await obj.beforeResolve(args);
 			}
 
-			const relatedCols = (relation.relatedProp && relation.relatedProp.cols) || [];
-			const ownerCols = (relation.ownerProp && relation.ownerProp.cols) || [];
+			// Return the object if it is already fetched
+			if (obj[relationName] !== undefined) {
+				return handleResult(obj[relationName], args);
+			}
 
 			// Only pass single column relations through data loader
 			if (relatedCols.length !== 1 || ownerCols.length !== 1) {
-				if (obj[relationName] !== undefined) return obj[relationName];
 				await obj.$loadRelated(relationName);
-				return obj[relationName] || null;
+				return handleResult(obj[relationName], args);
 			}
 
 			if (
 				relation instanceof Model.BelongsToOneRelation ||
 				relation instanceof Model.HasOneRelation
 			) {
-					return relation.relatedModelClass
-						.getLoader(relatedCols[0])
-						.load(obj[ownerCols[0]]);
+				return handleResult(
+						await relation.relatedModelClass
+							.getLoader(relatedCols[0])
+							.load(obj[ownerCols[0]]),
+						args
+					);
 			}
 			else if (relation instanceof Model.HasManyRelation) {
 				const modify = relation.modify;
 				if (String(modify).indexOf('noop') !== -1) {
-					return relation.relatedModelClass
-						.getManyLoader(relatedCols[0], options.ctx)
-						.load(obj[ownerCols[0]]);
+					return handleResult(
+						await relation.relatedModelClass
+							.getManyLoader(relatedCols[0], options.ctx)
+							.load(obj[ownerCols[0]]),
+						args
+					);
 				}
 
-				return relation.relatedModelClass
-					.getManyLoader(relatedCols[0], options.ctx, {
-						modify,
-					})
-					.load(obj[ownerCols[0]]);
+				return handleResult(
+					await relation.relatedModelClass
+						.getManyLoader(relatedCols[0], options.ctx, {
+							modify,
+						})
+						.load(obj[ownerCols[0]]),
+					args
+				);
 			}
 			else if (
 				relation instanceof Model.ManyToManyRelation ||
 				relation instanceof Model.HasOneThroughRelation
 			) {
-					return this.getRelationLoader(
-						relationName,
-						options.ctx,
-						{ownerCol: ownerCols[0]},
-					).load(obj[this.idColumn]);
+				return handleResult(
+						await this.getRelationLoader(
+							relationName,
+							options.ctx,
+							{ownerCol: ownerCols[0]},
+						).load(obj[this.idColumn]),
+						args
+					);
 			}
 
-			if (obj[relationName] !== undefined) return obj[relationName];
 			await obj.$loadRelated(relationName);
-			return obj[relationName] || null;
+			return handleResult(obj[relationName], args);
 		});
 	}
 
@@ -385,7 +435,7 @@ class BaseModel extends Model {
 		// Pet.person
 		const name = options.name || _.camelCase(modelClass.name);
 		// Person.petId
-		const joinFrom = options.joinFrom || `${this.tableName}.${_.camelCase(modelClass.name)}${_.upperFirst(modelClass.idColumn)}`;
+		const joinFrom = options.joinFrom || `${this.tableName}.${name}${_.upperFirst(modelClass.idColumn)}`;
 		// Pet.id
 		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
 		const filter = options.filter || options.modify || null;
@@ -411,7 +461,7 @@ class BaseModel extends Model {
 
 		// Person.pet
 		const name = options.name || _.camelCase(modelClass.name);
-		// Person.petId
+		// Pet.personId
 		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_.camelCase(this.name)}${_.upperFirst(this.idColumn)}`;
 		// Pet.id
 		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;

@@ -308,47 +308,87 @@ class BaseModel extends _objection.Model {
 		})();
 	}
 
+	/**
+  * beforeResolve can be used to return a modified item to use for resolving
+  * called before resolving (using graphql) a particular item
+  * @param  {Object} args arguments passed from graphql query
+  * @return {Object}      a xorm model object
+  */
+	beforeResolve(args) {
+		// eslint-disable-line
+		return this;
+	}
+
+	/**
+  * afterResolve can be used to modify the item we got from the resolver
+  * called after resolving (using graphql) a particular item
+  * @param  {Object} args arguments passed from graphql query
+  * @return {Object}      a xorm model object
+  */
+	afterResolve(args) {
+		// eslint-disable-line
+		return this;
+	}
+
 	static getRelationResolver(relationName, options = {}) {
 		var _this5 = this;
 
+		const handleResult = (obj, args) => {
+			if (!obj) return null;
+			if (Array.isArray(obj)) {
+				return obj.map(item => handleResult(item, args));
+			}
+			if (obj.afterResolve) {
+				return obj.afterResolve(args);
+			}
+			return obj;
+		};
+
+		const relation = this.getRelation(relationName);
+		if (!relation) {
+			throw new Error(`relation ${relationName} is not defined in ${this.name}`);
+		}
+
+		const relatedCols = relation.relatedProp && relation.relatedProp.cols || [];
+		const ownerCols = relation.ownerProp && relation.ownerProp.cols || [];
+
 		return (() => {
-			var _ref5 = _asyncToGenerator(function* (obj) {
-				const relation = _this5.getRelation(relationName);
-				if (!relation) {
-					throw new Error(`relation ${relationName} is not defined in ${_this5.name}`);
+			var _ref5 = _asyncToGenerator(function* (obj, args) {
+				if (obj.beforeResolve) {
+					obj = yield obj.beforeResolve(args);
 				}
 
-				const relatedCols = relation.relatedProp && relation.relatedProp.cols || [];
-				const ownerCols = relation.ownerProp && relation.ownerProp.cols || [];
+				// Return the object if it is already fetched
+				if (obj[relationName] !== undefined) {
+					return handleResult(obj[relationName], args);
+				}
 
 				// Only pass single column relations through data loader
 				if (relatedCols.length !== 1 || ownerCols.length !== 1) {
-					if (obj[relationName] !== undefined) return obj[relationName];
 					yield obj.$loadRelated(relationName);
-					return obj[relationName] || null;
+					return handleResult(obj[relationName], args);
 				}
 
 				if (relation instanceof _objection.Model.BelongsToOneRelation || relation instanceof _objection.Model.HasOneRelation) {
-					return relation.relatedModelClass.getLoader(relatedCols[0]).load(obj[ownerCols[0]]);
+					return handleResult((yield relation.relatedModelClass.getLoader(relatedCols[0]).load(obj[ownerCols[0]])), args);
 				} else if (relation instanceof _objection.Model.HasManyRelation) {
 					const modify = relation.modify;
 					if (String(modify).indexOf('noop') !== -1) {
-						return relation.relatedModelClass.getManyLoader(relatedCols[0], options.ctx).load(obj[ownerCols[0]]);
+						return handleResult((yield relation.relatedModelClass.getManyLoader(relatedCols[0], options.ctx).load(obj[ownerCols[0]])), args);
 					}
 
-					return relation.relatedModelClass.getManyLoader(relatedCols[0], options.ctx, {
+					return handleResult((yield relation.relatedModelClass.getManyLoader(relatedCols[0], options.ctx, {
 						modify
-					}).load(obj[ownerCols[0]]);
+					}).load(obj[ownerCols[0]])), args);
 				} else if (relation instanceof _objection.Model.ManyToManyRelation || relation instanceof _objection.Model.HasOneThroughRelation) {
-					return _this5.getRelationLoader(relationName, options.ctx, { ownerCol: ownerCols[0] }).load(obj[_this5.idColumn]);
+					return handleResult((yield _this5.getRelationLoader(relationName, options.ctx, { ownerCol: ownerCols[0] }).load(obj[_this5.idColumn])), args);
 				}
 
-				if (obj[relationName] !== undefined) return obj[relationName];
 				yield obj.$loadRelated(relationName);
-				return obj[relationName] || null;
+				return handleResult(obj[relationName], args);
 			});
 
-			return function (_x6) {
+			return function (_x6, _x7) {
 				return _ref5.apply(this, arguments);
 			};
 		})();
@@ -363,7 +403,7 @@ class BaseModel extends _objection.Model {
 				return _this6.getIdLoader(options.ctx).load(obj[propName]);
 			});
 
-			return function (_x7) {
+			return function (_x8) {
 				return _ref6.apply(this, arguments);
 			};
 		})();
@@ -379,7 +419,7 @@ class BaseModel extends _objection.Model {
 				});
 			});
 
-			return function (_x8, _x9) {
+			return function (_x9, _x10) {
 				return _ref7.apply(this, arguments);
 			};
 		})();
@@ -448,7 +488,7 @@ class BaseModel extends _objection.Model {
 		// Pet.person
 		const name = options.name || _lodash2.default.camelCase(modelClass.name);
 		// Person.petId
-		const joinFrom = options.joinFrom || `${this.tableName}.${_lodash2.default.camelCase(modelClass.name)}${_lodash2.default.upperFirst(modelClass.idColumn)}`;
+		const joinFrom = options.joinFrom || `${this.tableName}.${name}${_lodash2.default.upperFirst(modelClass.idColumn)}`;
 		// Pet.id
 		const joinTo = options.joinTo || `${modelClass.tableName}.${modelClass.idColumn}`;
 		const filter = options.filter || options.modify || null;
@@ -474,7 +514,7 @@ class BaseModel extends _objection.Model {
 
 		// Person.pet
 		const name = options.name || _lodash2.default.camelCase(modelClass.name);
-		// Person.petId
+		// Pet.personId
 		const joinFrom = options.joinFrom || `${modelClass.tableName}.${_lodash2.default.camelCase(this.name)}${_lodash2.default.upperFirst(this.idColumn)}`;
 		// Pet.id
 		const joinTo = options.joinTo || `${this.tableName}.${this.idColumn}`;
