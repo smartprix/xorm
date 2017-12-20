@@ -1,8 +1,8 @@
 ## xorm
 NodeJS ORM based on ObjectionJS with some extra utilities
 
-ObjectionJS documentation: http://vincit.github.io/objection.js/  
-ObjectionJS Repo: https://github.com/Vincit/objection.js/  
+ObjectionJS documentation: http://vincit.github.io/objection.js/
+ObjectionJS Repo: https://github.com/Vincit/objection.js/
 
 ## Extra Features
 Xorm adds some more functionalities in ObjectionJS.
@@ -23,27 +23,27 @@ class Person extends Model {
 ```
 
 ### Automatic timestamps
-Every model has automatically managed timestamps (`createdAt` and `updatedAt`), which gets updated whenever the model is created or updated.  
-For disabling the timestamps you can do `static timestamps = false;` in your model.  
+Every model has automatically managed timestamps (`createdAt` and `updatedAt`), which gets updated whenever the model is created or updated.
+For disabling the timestamps you can do `static timestamps = false;` in your model.
 
-For dealing with timestamp few extra methods are added:  
-`touch`: update `updatedAt` of the model to current time.  
-`dontTouch`: don't update the timestamps after executing the query  
+For dealing with timestamp few extra methods are added:
+`touch`: update `updatedAt` of the model to current time.
+`dontTouch`: don't update the timestamps after executing the query
 
 ### Soft Delete
-For turning on soft delete you can do `static softDelete = true;` (make sure your schema has `deletedAt` column as a nullable timestamp)  
-So whenever you delete a model, it won't actually be deleted from the database, instead the value of `deletedAt` column will be set to current time.  
-When retriving, it will automatically take care of the deleted models (they won't come in results).  
+For turning on soft delete you can do `static softDelete = true;` (make sure your schema has `deletedAt` column as a nullable timestamp)
+So whenever you delete a model, it won't actually be deleted from the database, instead the value of `deletedAt` column will be set to current time.
+When retriving, it will automatically take care of the deleted models (they won't come in results).
 
-For dealing with softDelete few extra methods are added:  
-`delete`: soft delete or delete a model (depending on whether softDelete is true or false)  
-`trash`: soft delete a model (you won't usually need this method, just use `delete`)  
-`withTrashed`: get all models (whether they are soft deleted or not)  
-`onlyTrashed`: only get soft deleted models.  
-`restore`: restore (undelete) a soft deleted model.  
-`forceDelete`: actually delete a model from the database  
+For dealing with softDelete few extra methods are added:
+`delete`: soft delete or delete a model (depending on whether softDelete is true or false)
+`trash`: soft delete a model (you won't usually need this method, just use `delete`)
+`withTrashed`: get all models (whether they are soft deleted or not)
+`onlyTrashed`: only get soft deleted models.
+`restore`: restore (undelete) a soft deleted model.
+`forceDelete`: actually delete a model from the database
 
-If you want to use some other column name instead of `deletedAt` you can do `static softDelete = 'deleted_at';`  
+If you want to use some other column name instead of `deletedAt` you can do `static softDelete = 'deleted_at';`
 
 ```js
 class Person extends Model {
@@ -72,28 +72,41 @@ take care of batching and optimizations.
 #### `getFindOneResolver()`
 returns a resolver for GraphQL query where you query the item by a single unique field
 
-`category(id: ID, name: String): Category`  
+`category(id: ID, name: String): Category`
 `Query: { category: Category.getFindOneResolver() }`
 
 #### `getRelationResolver(relationName)`
 returns a resolver for a relation that is defined in the model.
 
-`type Store { id: ID!, name: String!, category: Category }`  
-`Store: { category: Store.getRelationResolver('category') }`  
+`type Store { id: ID!, name: String!, category: Category }`
+`Store: { category: Store.getRelationResolver('category') }`
 
 #### `getDeleteByIdResolver()`
 returns a resolver for GraphQL delete mutation
 
-`deleteCategory(id: ID) { DeletedItem }`  
-`Mutation: { deleteCategory: Category.getDeleteByIdResolver() }`  
+`deleteCategory(id: ID) { DeletedItem }`
+`Mutation: { deleteCategory: Category.getDeleteByIdResolver() }`
 
 #### `getFindByIdSubResolver(propName)`
 returns a resolver for finding model by id. It optionally takes a propName
 argument which denotes the name of the field containing the id.
 
-`type Store { id: ID!, name: String!, category: Category }`  
-`Store: { category: Category.getFindByIdSubResolver() }`  
-`Store: { category: Category.getFindByIdSubResolver('categoryId') }`  
+`type Store { id: ID!, name: String!, category: Category }`
+`Store: { category: Category.getFindByIdSubResolver() }`
+`Store: { category: Category.getFindByIdSubResolver('categoryId') }`
+
+#### `beforeResolve(args)` and `afterResolve(args)`
+These functions are used to modify (or any other action like logging) the result of resolver before
+and after the item has been resolved.
+
+```js
+afterResolve(args) {
+	if (args.params) {
+		this.url = `${this.url}?${args.params}`;
+	}
+	return this;
+}
+```
 
 #### `getIdLoader(ctx)`
 returns a Data Loader for batching and caching purposes. You can optionally give it a context to
@@ -144,11 +157,11 @@ User.getManyLoader('country').loadMany(['IN', 'US']);
 ```
 
 ### `save` and `saveAndFetch`
-`save`: inserts a model if the id column does not exist, otherwise updates it.  
-`saveAndFetch`: saves the model and then fetches it. 
+`save`: inserts a model if the id column does not exist, otherwise updates it.
+`saveAndFetch`: saves the model and then fetches it.
 
 ### `wrapWhere`
-Wraps the where condition till now into braces  
+Wraps the where condition till now into braces
 so `builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');` becomes `"WHERE (a = 'b' OR c = 'd') AND e = 'f'"`
 
 ### `whereByOr(obj)`
@@ -167,6 +180,15 @@ q.where('id', 1).whereByAnd({votes: 100, user: 'smpx'})
 // where `id` = 1 or (`votes` = 100 and `user` = 'smpx')
 ```
 
+### `orderByArrayPos(column, items)`
+order the items by position in the array given (of column)
+this is mostly useful in whereIn queries where you need ordered results
+
+```js
+const ids = [1, 4, 3, 5, 8];
+q.whereIn('id', ids).orderByArrayPos('id', ids);
+```
+
 ### find Method
 `find`: find is like where except if only a single argument is given, it treats the argument as an id.
 
@@ -182,16 +204,16 @@ Person.query().where('name', 'Hitesh');
 ```
 
 ### where and find methods on model
-Instead of doing `Person.query().where()` you can do `Person.where()`  
-Instead of doing `Person.query().find()` you can do `Person.find()`  
+Instead of doing `Person.query().where()` you can do `Person.where()`
+Instead of doing `Person.query().find()` you can do `Person.find()`
 
 ### Easier Relationships
 You can define all your relationships in the `$relations` method.
 #### Methods for defining relations
-**belongsTo(model, options)**  
-**hasOne(model, options)**  
-**hasMany(model, options)**  
-**hasManyThrough(model, options)**  
+**belongsTo(model, options)**
+**hasOne(model, options)**
+**hasMany(model, options)**
+**hasManyThrough(model, options)**
 
 options are totally optional. they can be:
 ```

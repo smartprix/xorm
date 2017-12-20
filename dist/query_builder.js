@@ -84,6 +84,26 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		return this;
 	}
 
+	/**
+  * order the items by position in the array given (of column)
+  * this is mostly useful in whereIn queries where you need ordered results
+  * ```js
+  * const ids = [1, 4, 3, 5, 8];
+  * const query = Model.query().whereIn('id', ids).orderByArrayPos('id', ids);
+  * ```
+  * @param  {string} column array contains values of which column
+  * @param  {Array} array values of the columns
+  */
+	orderByArrayPos(column, array) {
+		this.orderByRaw("position(??::text in '?')", [column, array.map(item => `"${item}"`).join(', ')]);
+
+		return this;
+	}
+
+	orderByArrayPosition(column, array) {
+		return this.orderByArrayPos(column, array);
+	}
+
 	/* limitGroup(groupKey, limit, offset = 0) {
  	// TODO: Incomplete
  	// See Here: https://softonsofa.com/tweaking-eloquent-relations-how-to-get-n-related-models-per-parent/
