@@ -64,6 +64,20 @@ class BaseQueryBuilder extends _objection.QueryBuilder {
 		return this.patchAndFetchById(fields[id], patchFields);
 	}
 
+	updateById(id, fields) {
+		const idColumn = this.modelClass().idColumn;
+		return this.context({ id }).patch(fields).whereComposite(idColumn, id);
+	}
+
+	patchById(id, fields) {
+		return this.updateById(id, fields);
+	}
+
+	deleteById(id) {
+		const idColumn = this.modelClass().idColumn;
+		return this.context({ id }).delete().whereComposite(idColumn, id);
+	}
+
 	whereByOr(obj) {
 		this.where(q => {
 			_lodash2.default.forEach(obj, (value, key) => {
