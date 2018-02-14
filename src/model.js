@@ -317,11 +317,11 @@ class BaseModel extends Model {
 				relation instanceof Model.HasOneRelation
 			) {
 				return handleResult(
-						await relation.relatedModelClass
-							.getLoader(relatedCols[0])
-							.load(obj[ownerCols[0]]),
-						args
-					);
+					await relation.relatedModelClass
+						.getLoader(relatedCols[0])
+						.load(obj[ownerCols[0]]),
+					args
+				);
 			}
 			else if (relation instanceof Model.HasManyRelation) {
 				const modify = relation.modify;
@@ -348,13 +348,13 @@ class BaseModel extends Model {
 				relation instanceof Model.HasOneThroughRelation
 			) {
 				return handleResult(
-						await this.getRelationLoader(
-							relationName,
-							options.ctx,
-							{ownerCol: ownerCols[0]},
-						).load(obj[this.idColumn]),
-						args
-					);
+					await this.getRelationLoader(
+						relationName,
+						options.ctx,
+						{ownerCol: ownerCols[0]},
+					).load(obj[this.idColumn]),
+					args
+				);
 			}
 
 			await obj.$loadRelated(relationName);
@@ -369,7 +369,7 @@ class BaseModel extends Model {
 
 	static getDeleteByIdResolver() {
 		return (async (root, obj) => this.query().deleteById(obj[this.idColumn])
-				.then(() => ({id: obj[this.idColumn]})));
+			.then(() => ({id: obj[this.idColumn]})));
 	}
 
 	$beforeInsert(context) {
