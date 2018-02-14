@@ -57,16 +57,17 @@ class BaseQueryBuilder extends QueryBuilder {
 
 	updateById(id, fields) {
 		const idColumn = this.modelClass().idColumn;
-		return this.context({id}).patch(fields).whereComposite(idColumn, id);
+		return this.mergeContext({id}).update(fields).whereComposite(idColumn, id);
 	}
 
 	patchById(id, fields) {
-		return this.updateById(id, fields);
+		const idColumn = this.modelClass().idColumn;
+		return this.mergeContext({id}).patch(fields).whereComposite(idColumn, id);
 	}
 
 	deleteById(id) {
 		const idColumn = this.modelClass().idColumn;
-		return this.context({id}).delete().whereComposite(idColumn, id);
+		return this.mergeContext({id}).delete().whereComposite(idColumn, id);
 	}
 
 	whereByOr(obj) {
