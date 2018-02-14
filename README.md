@@ -160,6 +160,12 @@ User.getManyLoader('country').loadMany(['IN', 'US']);
 `save`: inserts a model if the id column does not exist, otherwise updates it.
 `saveAndFetch`: saves the model and then fetches it.
 
+### `updateById`, `patchById` and `deleteById`
+`updateById(id, fields)`: updates the model by id
+`patchById(id, fields)`: patches the model by id
+`deleteById(id)`: deletes the model by id
+All three merge the id property into the query context
+
 ### `wrapWhere`
 Wraps the where condition till now into braces
 so `builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');` becomes `"WHERE (a = 'b' OR c = 'd') AND e = 'f'"`
