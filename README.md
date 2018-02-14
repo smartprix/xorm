@@ -161,9 +161,9 @@ User.getManyLoader('country').loadMany(['IN', 'US']);
 `saveAndFetch`: saves the model and then fetches it.
 
 ### `updateById`, `patchById` and `deleteById`
-`updateById(id, fields)`: updates the model by id
-`patchById(id, fields)`: patches the model by id
-`deleteById(id)`: deletes the model by id
+`updateById(id, fields)`: updates the model by id\
+`patchById(id, fields)`: patches the model by id\
+`deleteById(id)`: deletes the model by id\
 All three merge the id property into the query context
 
 ### `wrapWhere`
