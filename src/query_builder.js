@@ -129,7 +129,7 @@ class BaseQueryBuilder extends QueryBuilder {
 			@rank := IF(@group = ${groupKey}, @rank+1, 1) as ${rankAlias},
 			@group := {$group} as ${groupAlias}
 		`);
-	}*/
+	} */
 
 	_handleScopes() {
 		if (!this.modelClass().scopes) return;
@@ -182,7 +182,7 @@ class BaseQueryBuilder extends QueryBuilder {
 		const softDeleteColumn = `${model.tableName}.${model.softDeleteColumn}`;
 
 		this.onBuild((builder) => {
-			if (!builder.isFindQuery() || builder.context().withTrashed) return;
+			if (!builder.isFind() || builder.context().withTrashed) return;
 
 			builder.wrapWhere();
 
