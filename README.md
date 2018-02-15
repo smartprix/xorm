@@ -156,6 +156,23 @@ User.getManyLoader('country').load('IN');
 User.getManyLoader('country').loadMany(['IN', 'US']);
 ```
 
+#### `loadById(id, ctx)`
+Short for `getIdLoader(ctx).load(id)`
+
+#### `loadByColumn(columnName, columnValue, ctx)`
+Short for `getLoader(columnName, columnValue).load(ctx)`
+
+#### `loadManyByColumn(columnName, columnValue, ctx)`
+Short for `getManyLoader(columnName, ctx).load(columnValue)`
+
+#### `loadByRelation(relationName, options = {ctx, args})`
+You can use this to get a related model. This will automatically take care of batching. `args` can be used to pass arguments to `beforeResolve` and `afterResolve`
+
+```js
+const product = await Product.query().findById(1);
+const category = await product.loadByRelation('category');
+```
+
 ### `save` and `saveAndFetch`
 `save`: inserts a model if the id column does not exist, otherwise updates it.
 `saveAndFetch`: saves the model and then fetches it.

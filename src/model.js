@@ -167,6 +167,30 @@ class BaseModel extends Model {
 		return this.getLoader(this.idColumn, ctx);
 	}
 
+	static loadById(id, ctx = null) {
+		if (Array.isArray(id)) {
+			return this.getIdLoader(ctx).loadMany(id);
+		}
+
+		return this.getIdLoader(ctx).load(id);
+	}
+
+	static loadByColumn(columnName, columnValue, ctx = null) {
+		if (Array.isArray(columnValue)) {
+			return this.getLoader(columnName, ctx).loadMany(columnValue);
+		}
+
+		return this.getLoader(columnName, ctx).load(columnValue);
+	}
+
+	static loadManyByColumn(columnName, columnValue, ctx = null) {
+		if (Array.isArray(columnValue)) {
+			return this.getManyLoader(columnName, ctx).loadMany(columnValue);
+		}
+
+		return this.getManyLoader(columnName, ctx).load(columnValue);
+	}
+
 	// base path for requiring models in relations
 	static setBasePath(basePath) {
 		this.basePath = basePath;
@@ -276,7 +300,7 @@ class BaseModel extends Model {
 		return this;
 	}
 
-	static getRelationResolver(relationName, options = {}) {
+	async loadByRelation(relationName, options = {}) {
 		const handleResult = (obj, args) => {
 			if (!obj) return null;
 			if (Array.isArray(obj)) {
@@ -296,69 +320,78 @@ class BaseModel extends Model {
 		const relatedCols = (relation.relatedProp && relation.relatedProp.cols) || [];
 		const ownerCols = (relation.ownerProp && relation.ownerProp.cols) || [];
 
+		const args = options.args || {};
+
+		let self = this;
+		if (this.beforeResolve) {
+			// eslint-disable-next-line consistent-this
+			self = await this.beforeResolve(args);
+		}
+
+		// Return the object if it is already fetched
+		if (self[relationName] !== undefined) {
+			return handleResult(self[relationName], args);
+		}
+
+		// Only pass single column relations through data loader
+		if (relatedCols.length !== 1 || ownerCols.length !== 1) {
+			await self.$loadRelated(relationName);
+			return handleResult(self[relationName], args);
+		}
+
+		if (
+			relation instanceof Model.BelongsToOneRelation ||
+			relation instanceof Model.HasOneRelation
+		) {
+			return handleResult(
+				await relation.relatedModelClass
+					.getLoader(relatedCols[0])
+					.load(self[ownerCols[0]]),
+				args
+			);
+		}
+		else if (relation instanceof Model.HasManyRelation) {
+			const modify = relation.modify;
+			if (String(modify).indexOf('noop') !== -1) {
+				return handleResult(
+					await relation.relatedModelClass
+						.getManyLoader(relatedCols[0], options.ctx)
+						.load(self[ownerCols[0]]),
+					args
+				);
+			}
+
+			return handleResult(
+				await relation.relatedModelClass
+					.getManyLoader(relatedCols[0], options.ctx, {
+						modify,
+					})
+					.load(self[ownerCols[0]]),
+				args
+			);
+		}
+		else if (
+			relation instanceof Model.ManyToManyRelation ||
+			relation instanceof Model.HasOneThroughRelation
+		) {
+			return handleResult(
+				await this.getRelationLoader(
+					relationName,
+					options.ctx,
+					{ownerCol: ownerCols[0]},
+				).load(self[this.idColumn]),
+				args
+			);
+		}
+
+		await self.$loadRelated(relationName);
+		return handleResult(self[relationName], args);
+	}
+
+	static getRelationResolver(relationName, options = {}) {
 		return (async (obj, args) => {
-			if (obj.beforeResolve) {
-				obj = await obj.beforeResolve(args);
-			}
-
-			// Return the object if it is already fetched
-			if (obj[relationName] !== undefined) {
-				return handleResult(obj[relationName], args);
-			}
-
-			// Only pass single column relations through data loader
-			if (relatedCols.length !== 1 || ownerCols.length !== 1) {
-				await obj.$loadRelated(relationName);
-				return handleResult(obj[relationName], args);
-			}
-
-			if (
-				relation instanceof Model.BelongsToOneRelation ||
-				relation instanceof Model.HasOneRelation
-			) {
-				return handleResult(
-					await relation.relatedModelClass
-						.getLoader(relatedCols[0])
-						.load(obj[ownerCols[0]]),
-					args
-				);
-			}
-			else if (relation instanceof Model.HasManyRelation) {
-				const modify = relation.modify;
-				if (String(modify).indexOf('noop') !== -1) {
-					return handleResult(
-						await relation.relatedModelClass
-							.getManyLoader(relatedCols[0], options.ctx)
-							.load(obj[ownerCols[0]]),
-						args
-					);
-				}
-
-				return handleResult(
-					await relation.relatedModelClass
-						.getManyLoader(relatedCols[0], options.ctx, {
-							modify,
-						})
-						.load(obj[ownerCols[0]]),
-					args
-				);
-			}
-			else if (
-				relation instanceof Model.ManyToManyRelation ||
-				relation instanceof Model.HasOneThroughRelation
-			) {
-				return handleResult(
-					await this.getRelationLoader(
-						relationName,
-						options.ctx,
-						{ownerCol: ownerCols[0]},
-					).load(obj[this.idColumn]),
-					args
-				);
-			}
-
-			await obj.$loadRelated(relationName);
-			return handleResult(obj[relationName], args);
+			options.args = args;
+			return obj.loadByRelation(relationName, options);
 		});
 	}
 
