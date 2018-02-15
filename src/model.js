@@ -59,6 +59,7 @@ let globalLoaderContext = {};
 * 4. scopes (define as static scopes = {default(builder) {}, something(builder) {}, ...})
 */
 class BaseModel extends Model {
+	static useLimitInFirst = true;
 	static timestamps = true;
 	static softDelete = false;
 	static Error = UserError;
@@ -312,7 +313,7 @@ class BaseModel extends Model {
 			return obj;
 		};
 
-		const relation = this.getRelation(relationName);
+		const relation = this.constructor.getRelation(relationName);
 		if (!relation) {
 			throw new Error(`relation ${relationName} is not defined in ${this.name}`);
 		}
