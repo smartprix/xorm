@@ -376,7 +376,7 @@ class BaseModel extends Model {
 			relation instanceof Model.HasOneThroughRelation
 		) {
 			return handleResult(
-				await this.getRelationLoader(
+				await BaseModel.getRelationLoader(
 					relationName,
 					options.ctx,
 					{ownerCol: ownerCols[0]},
