@@ -376,11 +376,11 @@ class BaseModel extends Model {
 			relation instanceof Model.HasOneThroughRelation
 		) {
 			return handleResult(
-				await this.getRelationLoader(
+				await this.constructor.getRelationLoader(
 					relationName,
 					options.ctx,
 					{ownerCol: ownerCols[0]},
-				).load(self[this.idColumn]),
+				).load(self[this.constructor.idColumn]),
 				args
 			);
 		}
