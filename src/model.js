@@ -380,7 +380,7 @@ class BaseModel extends Model {
 					relationName,
 					options.ctx,
 					{ownerCol: ownerCols[0]},
-				).load(self[this.idColumn]),
+				).load(self[this.constructor.idColumn]),
 				args
 			);
 		}
