@@ -48,6 +48,17 @@ function mapManyResults(results, keys, columnName) {
 	return mappedResults;
 }
 
+function handleResult(obj, args) {
+	if (!obj) return null;
+	if (Array.isArray(obj)) {
+		return obj.map(item => handleResult(item, args));
+	}
+	if (obj.afterResolve) {
+		return obj.afterResolve(args);
+	}
+	return obj;
+}
+
 let globalLoaderContext = {};
 
 /**
@@ -312,17 +323,6 @@ class BaseModel extends Model {
 	}
 
 	async loadByRelation(relationName, options = {}) {
-		const handleResult = (obj, args) => {
-			if (!obj) return null;
-			if (Array.isArray(obj)) {
-				return obj.map(item => handleResult(item, args));
-			}
-			if (obj.afterResolve) {
-				return obj.afterResolve(args);
-			}
-			return obj;
-		};
-
 		const relation = this.constructor.getRelation(relationName);
 		if (!relation) {
 			throw new Error(`relation ${relationName} is not defined in ${this.name}`);
