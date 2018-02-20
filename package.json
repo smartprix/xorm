@@ -14,7 +14,8 @@
     "lint:fix": "eslint src --fix",
     "test-only": "mocha test/*.test.js",
     "build": "babel src --out-dir dist",
-    "-precommit": "npm run build && npm test && npm run check-coverage"
+    "-precommit": "npm run build && npm test && npm run check-coverage",
+    "prepublishOnly": "npm run build"
   },
   "author": "Hitesh Khandelwal <hitesh@smartprix.com> (http://www.smartprix.com/)",
   "license": "ISC",
@@ -29,9 +30,9 @@
     "babel-preset-stage-0": "6.24.1",
     "babel-register": "6.26.0",
     "chai": "4.1.2",
-    "eslint": "4.17.0",
+    "eslint": "4.18.0",
     "eslint-config-smartprix": "3.3.1",
-    "knex": "^0.14.3",
+    "knex": "^0.14.4",
     "mocha": "5.0.1"
   },
   "babel": {

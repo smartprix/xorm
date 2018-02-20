@@ -107,10 +107,10 @@ class BaseModel extends Model {
 		if (!ctx[loaderName]) {
 			ctx[loaderName] = new DataLoader(async (keys) => {
 				// this is for avoiding un-necessary queries where the value is 0 or null
-				keys = _.uniq(keys.filter(key => (key && key !== '0')));
+				const filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
 				let results = [];
-				if (keys.length) {
-					results = await this.query().whereIn(columnName, _.uniq(keys));
+				if (filteredKeys.length) {
+					results = await this.query().whereIn(columnName, filteredKeys);
 				}
 				return mapResults(results, keys, columnName);
 			}, {cache});
@@ -139,10 +139,10 @@ class BaseModel extends Model {
 		if (!ctx[loaderName]) {
 			ctx[loaderName] = new DataLoader(async (keys) => {
 				// this is for avoiding un-necessary queries where the value is 0 or null
-				keys = _.uniq(keys.filter(key => (key && key !== '0')));
+				const filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
 				let results = [];
-				if (keys.length) {
-					const query = this.query().whereIn(columnName, _.uniq(keys));
+				if (filteredKeys.length) {
+					const query = this.query().whereIn(columnName, filteredKeys);
 					if (options.modify) {
 						if (_.isPlainObject(options.modify)) {
 							query.where(options.modify);
