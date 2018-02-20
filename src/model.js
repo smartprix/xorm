@@ -95,7 +95,12 @@ class BaseModel extends Model {
 
 		if (!ctx[loaderName]) {
 			ctx[loaderName] = new DataLoader(async (keys) => {
-				const results = await this.query().whereIn(columnName, _.uniq(keys));
+				// this is for avoiding un-necessary queries where the value is 0 or null
+				keys = _.uniq(keys.filter(key => (key && key !== '0')));
+				let results = [];
+				if (keys.length) {
+					results = await this.query().whereIn(columnName, _.uniq(keys));
+				}
 				return mapResults(results, keys, columnName);
 			}, {cache});
 		}
@@ -122,16 +127,21 @@ class BaseModel extends Model {
 
 		if (!ctx[loaderName]) {
 			ctx[loaderName] = new DataLoader(async (keys) => {
-				const query = this.query().whereIn(columnName, _.uniq(keys));
-				if (options.modify) {
-					if (_.isPlainObject(options.modify)) {
-						query.where(options.modify);
+				// this is for avoiding un-necessary queries where the value is 0 or null
+				keys = _.uniq(keys.filter(key => (key && key !== '0')));
+				let results = [];
+				if (keys.length) {
+					const query = this.query().whereIn(columnName, _.uniq(keys));
+					if (options.modify) {
+						if (_.isPlainObject(options.modify)) {
+							query.where(options.modify);
+						}
+						else {
+							query.modify(options.modify);
+						}
 					}
-					else {
-						query.modify(options.modify);
-					}
+					results = await query;
 				}
-				const results = await query;
 				return mapManyResults(results, keys, columnName);
 			}, {cache});
 		}

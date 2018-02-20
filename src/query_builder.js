@@ -100,17 +100,30 @@ class BaseQueryBuilder extends QueryBuilder {
 	 * @param  {string} column array contains values of which column
 	 * @param  {Array} array values of the columns
 	 */
-	orderByArrayPos(column, array) {
-		this.orderByRaw("position(??::text in '?')", [
-			column,
-			array.map(item => `"${item}"`).join(', '),
-		]);
+	orderByArrayPos(column, values) {
+		// eslint-disable-next-line
+		this.runAfter(async (models) => {
+			return _.orderBy(models, model => values.indexOf(model[column]));
+		});
 
 		return this;
 	}
 
 	orderByArrayPosition(column, array) {
 		return this.orderByArrayPos(column, array);
+	}
+
+	/**
+	 * this is equivalent to `this.where(column, values).orderByArrayPos(column, values)`
+	 * use this for returning results ordered in the way you gave them
+	 */
+	whereInOrdered(column, values) {
+		this.where(column, values).orderByArrayPos(column, values);
+		return this;
+	}
+
+	andWhereInOrdered(column, values) {
+		return this.whereInOrdered(column, values);
 	}
 
 	/* limitGroup(groupKey, limit, offset = 0) {

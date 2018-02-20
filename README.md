@@ -204,12 +204,21 @@ q.where('id', 1).whereByAnd({votes: 100, user: 'smpx'})
 ```
 
 ### `orderByArrayPos(column, items)`
-order the items by position in the array given (of column)
-this is mostly useful in whereIn queries where you need ordered results
+order the items by position in the array given (of column).
+this is mostly useful in whereIn queries where you need ordered results.
 
 ```js
 const ids = [1, 4, 3, 5, 8];
 q.whereIn('id', ids).orderByArrayPos('id', ids);
+```
+
+### `whereInOrdered(column, values)`
+equivalent to `this.where(column, values).orderByArrayPos(column, values)`.
+use this for returning results ordered in the way you gave them
+
+```js
+const ids = [1, 4, 3, 5, 8];
+q.whereInOrdered('id', ids)
 ```
 
 ### find Method
