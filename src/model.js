@@ -119,9 +119,10 @@ class BaseModel extends Model {
 		return ctx[loaderName];
 	}
 
-	static getManyLoader(columnName, ctx = null, options = {}) {
+	static getManyLoader(columnName, options = {}) {
 		let loaderName = `${this.tableName}${columnName}DataLoader`;
 		let cache = true;
+		let ctx = options.ctx;
 		if (!ctx) {
 			ctx = globalLoaderContext;
 			cache = false;
@@ -189,28 +190,32 @@ class BaseModel extends Model {
 		return this.getLoader(this.idColumn, ctx);
 	}
 
-	static loadById(id, ctx = null) {
-		if (Array.isArray(id)) {
-			return this.getIdLoader(ctx).loadMany(id);
-		}
-
-		return this.getIdLoader(ctx).load(id);
-	}
-
 	static loadByColumn(columnName, columnValue, ctx = null) {
+		if (!columnValue || columnValue === '0') return null;
+
 		if (Array.isArray(columnValue)) {
+			// change falsy values to false, otherwise dataloader creates problems (does not accept null)
+			columnValue = columnValue.map(val => val || false);
 			return this.getLoader(columnName, ctx).loadMany(columnValue);
 		}
 
 		return this.getLoader(columnName, ctx).load(columnValue);
 	}
 
-	static loadManyByColumn(columnName, columnValue, ctx = null) {
+	static loadById(id, ctx = null) {
+		return this.loadByColumn(this.idColumn, id, ctx);
+	}
+
+	static loadManyByColumn(columnName, columnValue, options = {}) {
+		if (!columnValue || columnValue === '0') return null;
+
 		if (Array.isArray(columnValue)) {
-			return this.getManyLoader(columnName, ctx).loadMany(columnValue);
+			// change falsy values to false, otherwise dataloader creates problems (does not accept null)
+			columnValue = columnValue.map(val => val || false);
+			return this.getManyLoader(columnName, options).loadMany(columnValue);
 		}
 
-		return this.getManyLoader(columnName, ctx).load(columnValue);
+		return this.getManyLoader(columnName, options).load(columnValue);
 	}
 
 	// base path for requiring models in relations
@@ -283,14 +288,14 @@ class BaseModel extends Model {
 	static getFindOneResolver(options = {}) {
 		return (async (root, args) => {
 			if (args[this.idColumn]) {
-				return this.getIdLoader(options.ctx).load(args[this.idColumn]);
+				return this.loadById(args[this.idColumn], options.ctx);
 			}
 
 			const keys = Object.keys(args);
 			if (!keys.length) return null;
 
 			if (keys.length === 1) {
-				return this.getLoader(keys[0], options.ctx).load(args[keys[0]]);
+				return this.loadByColumn(keys[0], args[keys[0]], options.ctx);
 			}
 
 			const query = this.query();
@@ -356,8 +361,7 @@ class BaseModel extends Model {
 		) {
 			return handleResult(
 				await relation.relatedModelClass
-					.getLoader(relatedCols[0])
-					.load(self[ownerCols[0]]),
+					.loadByColumn(relatedCols[0], self[ownerCols[0]], options.ctx),
 				args
 			);
 		}
@@ -366,18 +370,14 @@ class BaseModel extends Model {
 			if (String(modify).indexOf('noop') !== -1) {
 				return handleResult(
 					await relation.relatedModelClass
-						.getManyLoader(relatedCols[0], options.ctx)
-						.load(self[ownerCols[0]]),
+						.loadManyByColumn(relatedCols[0], self[ownerCols[0]], options.ctx),
 					args
 				);
 			}
 
 			return handleResult(
 				await relation.relatedModelClass
-					.getManyLoader(relatedCols[0], options.ctx, {
-						modify,
-					})
-					.load(self[ownerCols[0]]),
+					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx, modify}),
 				args
 			);
 		}
@@ -408,7 +408,7 @@ class BaseModel extends Model {
 
 	static getFindByIdSubResolver(propName, options = {}) {
 		if (!propName) propName = `${_.camelCase(this.name)}Id`;
-		return (async obj => this.getIdLoader(options.ctx).load(obj[propName]));
+		return (async obj => this.loadById(obj[propName], options.ctx));
 	}
 
 	static getDeleteByIdResolver() {
