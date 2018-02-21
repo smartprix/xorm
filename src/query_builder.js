@@ -116,7 +116,7 @@ class BaseQueryBuilder extends QueryBuilder {
 	 * use this for returning results ordered in the way you gave them
 	 */
 	whereInOrdered(column, values) {
-		this.where(column, values).orderByArrayPos(column, values);
+		this.whereIn(column, values).orderByArrayPos(column, values);
 		return this;
 	}
 
