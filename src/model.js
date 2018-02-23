@@ -3,6 +3,7 @@ import path from 'path';
 import _ from 'lodash';
 import {Model, AjvValidator} from 'objection';
 import DataLoader from 'dataloader';
+import {Cache} from 'sm-utils';
 import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
 import UserError from './user_error';
@@ -92,8 +93,72 @@ class BaseModel extends Model {
 		});
 	}
 
+	get $cache() {
+		if (!this.__cache) {
+			this.__cache = new Cache();
+		}
+
+		return this.__cache;
+	}
+
+	static get cache() {
+		if (!this.__cache) {
+			this.__cache = new Cache();
+		}
+
+		return this.__cache;
+	}u
+
 	static setGlobalLoaderContext(ctx) {
 		globalLoaderContext = ctx;
+	}
+
+	// make a loader so you can use it to batch queries which are not covered by existing loaders
+	static makeLoader(loaderName, loaderFunc, options = {}) {
+		const loaderKey = `${this.tableName}Custom${loaderName}DataLoader`;
+		if (globalLoaderContext[loaderKey]) return globalLoaderContext[loaderKey];
+
+		const opts = Object.assign({
+			ignoreResults: false,
+			filterKeys: true,
+			mapBy: 'id',
+			cache: false,
+		}, options);
+
+		globalLoaderContext[loaderKey] = new DataLoader(async (keys) => {
+			if (!keys.length) return [];
+
+			let filteredKeys;
+			if (typeof opts.filterKeys === 'function') {
+				// this is for avoiding un-necessary queries where the value is 0 or null
+				filteredKeys = _.uniq(keys.filter(filteredKeys));
+			}
+			else if (opts.filterKeys) {
+				filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
+			}
+			else {
+				filteredKeys = keys;
+			}
+
+			let results = [];
+			if (filteredKeys.length) {
+				results = await loaderFunc(filteredKeys);
+			}
+
+			// since we don't need any results, we just return
+			// an array of null so that dataloader doesn't complain
+			if (opts.ignoreResults) {
+				return _.fill(Array(keys.length), null);
+			}
+
+			if (opts.mapBy) {
+				return mapResults(results, keys, opts.mapBy);
+			}
+
+			return results;
+		}, {cache: opts.cache});
+
+		return globalLoaderContext[loaderKey];
 	}
 
 	static getLoader(columnName, ctx = null) {

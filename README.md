@@ -173,6 +173,27 @@ const product = await Product.query().findById(1);
 const category = await product.loadByRelation('category');
 ```
 
+#### `makeLoader(loaderName, loaderFn, options = {})`
+You can use this function to make a loader if the query is not covered by existing loaders.
+
+```js
+class Product extends Model {
+	async setIndexed() {
+		const loader = Product.makeLoader('setIndexed', async (keys) => {
+			return Product.query().update('indexed', 1).whereIn('id', keys);
+		}, {ignoreResults: true});
+
+		return loader.load(this.id);
+	}
+}
+
+// options can be
+// ignoreResults: [default false] ignore the results returned by the loader function
+// mapBy: [default 'id'] map results returned by the loaderFn using this key
+// cache: [default false] cache the results returned by loaderFn indefinitely
+// filterKeys: [default true] filter the falsy keys before calling loaderFn, filterKeys can also be a function
+```
+
 ### `save` and `saveAndFetch`
 `save`: inserts a model if the id column does not exist, otherwise updates it.
 `saveAndFetch`: saves the model and then fetches it.
@@ -238,6 +259,18 @@ Person.query().where('name', 'Hitesh');
 ### where and find methods on model
 Instead of doing `Person.query().where()` you can do `Person.where()`
 Instead of doing `Person.query().find()` you can do `Person.find()`
+
+### `$cache` and `cache`
+You can use these properties to cache things.
+`$cache` is for instance and `cache` is for the Model
+
+```js
+class Person extends Model {
+	async getChildren() {
+		return this.$cache.getOrSet('children', () => this.$loadRelated('children'));
+	}
+}
+```
 
 ### Easier Relationships
 You can define all your relationships in the `$relations` method.
