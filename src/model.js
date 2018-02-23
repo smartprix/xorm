@@ -107,7 +107,7 @@ class BaseModel extends Model {
 		}
 
 		return this.__cache;
-	}u
+	}
 
 	static setGlobalLoaderContext(ctx) {
 		globalLoaderContext = ctx;
