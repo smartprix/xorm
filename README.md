@@ -75,11 +75,17 @@ returns a resolver for GraphQL query where you query the item by a single unique
 `category(id: ID, name: String): Category`
 `Query: { category: Category.getFindOneResolver() }`
 
-#### `getRelationResolver(relationName)`
+#### `getRelationResolver(relationName, options = {})`
 returns a resolver for a relation that is defined in the model.
 
 `type Store { id: ID!, name: String!, category: Category }`
 `Store: { category: Store.getRelationResolver('category') }`
+
+Options can be:
+```js
+// options can be
+// default: default value to return if the relation returns null, can be a function
+```
 
 #### `getDeleteByIdResolver()`
 returns a resolver for GraphQL delete mutation
@@ -95,17 +101,22 @@ argument which denotes the name of the field containing the id.
 `Store: { category: Category.getFindByIdSubResolver() }`
 `Store: { category: Category.getFindByIdSubResolver('categoryId') }`
 
-#### `beforeResolve(args)` and `afterResolve(args)`
+#### `beforeResolve(options)` and `afterResolve(options)`
 These functions are used to modify (or any other action like logging) the result of resolver before
 and after the item has been resolved.
 
 ```js
-afterResolve(args) {
-	if (args.params) {
-		this.url = `${this.url}?${args.params}`;
+afterResolve(options) {
+	const params = {options.args};
+	if (params) {
+		this.url = `${this.url}?${params}`;
 	}
 	return this;
 }
+
+// options will be
+// args: graphql query arguments (it'll be automatically filled by xorm)
+// isDefault: whether the query returned null and default value is used
 ```
 
 #### `getIdLoader(ctx)`

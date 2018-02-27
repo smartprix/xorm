@@ -49,13 +49,27 @@ function mapManyResults(results, keys, columnName) {
 	return mappedResults;
 }
 
-function handleResult(obj, args) {
-	if (!obj) return null;
+async function handleResult(obj, options) {
+	if (!obj) {
+		if (!options.default) {
+			return null;
+		}
+
+		options.isDefault = true;
+
+		if (typeof options.default === 'function') {
+			obj = await options.default(options.args);
+		}
+		else {
+			obj = await options.default;
+		}
+	}
+
 	if (Array.isArray(obj)) {
-		return obj.map(item => handleResult(item, args));
+		return Promise.all(obj.map(item => handleResult(item, options)));
 	}
 	if (obj.afterResolve) {
-		return obj.afterResolve(args);
+		return obj.afterResolve(options);
 	}
 	return obj;
 }
@@ -255,7 +269,7 @@ class BaseModel extends Model {
 		return this.getLoader(this.idColumn, ctx);
 	}
 
-	static loadByColumn(columnName, columnValue, ctx = null) {
+	static _loadByColumn(columnName, columnValue, ctx = null) {
 		if (!columnValue || columnValue === '0') return null;
 
 		if (Array.isArray(columnValue)) {
@@ -267,8 +281,17 @@ class BaseModel extends Model {
 		return this.getLoader(columnName, ctx).load(columnValue);
 	}
 
+	static loadByColumn(columnName, columnValue, ctx = null) {
+		// separate loadById and loadByColumn, in case we override loadById
+		if (columnName === this.idColumn) {
+			return this.loadById(columnValue, ctx);
+		}
+
+		return this._loadByColumn(columnName, columnValue, ctx);
+	}
+
 	static loadById(id, ctx = null) {
-		return this.loadByColumn(this.idColumn, id, ctx);
+		return this._loadByColumn(this.idColumn, id, ctx);
 	}
 
 	static loadManyByColumn(columnName, columnValue, options = {}) {
@@ -375,7 +398,7 @@ class BaseModel extends Model {
 	/**
 	 * beforeResolve can be used to return a modified item to use for resolving
 	 * called before resolving (using graphql) a particular item
-	 * @param  {Object} args arguments passed from graphql query
+	 * @param  {Object} options options is {args} args = arguments passed from graphql query
 	 * @return {Object}      a xorm model object
 	 */
 	beforeResolve(args) {	// eslint-disable-line
@@ -385,7 +408,9 @@ class BaseModel extends Model {
 	/**
 	 * afterResolve can be used to modify the item we got from the resolver
 	 * called after resolving (using graphql) a particular item
-	 * @param  {Object} args arguments passed from graphql query
+	 * @param  {Object} options options is {args, default, isDefault}
+	 * 	args = graphql query args
+	 * 	isDefault = true if default value is returned
 	 * @return {Object}      a xorm model object
 	 */
 	afterResolve(args) {	// eslint-disable-line
@@ -406,18 +431,18 @@ class BaseModel extends Model {
 		let self = this;
 		if (this.beforeResolve) {
 			// eslint-disable-next-line consistent-this
-			self = await this.beforeResolve(args);
+			self = await this.beforeResolve(options);
 		}
 
 		// Return the object if it is already fetched
 		if (self[relationName] !== undefined) {
-			return handleResult(self[relationName], args);
+			return handleResult(self[relationName], options);
 		}
 
 		// Only pass single column relations through data loader
 		if (relatedCols.length !== 1 || ownerCols.length !== 1) {
 			await self.$loadRelated(relationName);
-			return handleResult(self[relationName], args);
+			return handleResult(self[relationName], options);
 		}
 
 		if (
@@ -427,7 +452,7 @@ class BaseModel extends Model {
 			return handleResult(
 				await relation.relatedModelClass
 					.loadByColumn(relatedCols[0], self[ownerCols[0]], options.ctx),
-				args
+				options
 			);
 		}
 		else if (relation instanceof Model.HasManyRelation) {
@@ -436,14 +461,14 @@ class BaseModel extends Model {
 				return handleResult(
 					await relation.relatedModelClass
 						.loadManyByColumn(relatedCols[0], self[ownerCols[0]], options.ctx),
-					args
+					options
 				);
 			}
 
 			return handleResult(
 				await relation.relatedModelClass
 					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx, modify}),
-				args
+				options
 			);
 		}
 		else if (
