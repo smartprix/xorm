@@ -21,6 +21,25 @@ function mapResults(results, keys, columnName) {
 	const resultHash = {};
 	const mappedResults = [];
 
+	if (Array.isArray(columnName)) {
+		if (columnName.length === 1) {
+			columnName = columnName[0];
+		}
+		else {
+			for (const key of keys) {
+				const found = results.find(result => (
+					// we need == here because result can either return a string or a number
+					// eslint-disable-next-line eqeqeq
+					columnName.every((k, i) => result[k] == key[i])
+				));
+
+				mappedResults.push(found || null);
+			}
+
+			return mappedResults;
+		}
+	}
+
 	for (const result of results) {
 		resultHash[result[columnName]] = result;
 	}
@@ -142,13 +161,18 @@ class BaseModel extends Model {
 		globalLoaderContext[loaderKey] = new DataLoader(async (keys) => {
 			if (!keys.length) return [];
 
+			let uniqFunc;
+			if (Array.isArray(keys[0])) {
+				uniqFunc = item => item.join('-');
+			}
+
 			let filteredKeys;
 			if (typeof opts.filterKeys === 'function') {
 				// this is for avoiding un-necessary queries where the value is 0 or null
-				filteredKeys = _.uniq(keys.filter(filteredKeys));
+				filteredKeys = _.uniqBy(keys.filter(opts.filterKeys), uniqFunc);
 			}
 			else if (opts.filterKeys) {
-				filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
+				filteredKeys = _.uniqBy(keys.filter(key => (key && key !== '0')), uniqFunc);
 			}
 			else {
 				filteredKeys = keys;
@@ -176,7 +200,21 @@ class BaseModel extends Model {
 	}
 
 	static getLoader(columnName, ctx = null) {
-		const loaderName = `${this.tableName}${columnName}DataLoader`;
+		let loaderName;
+
+		if (Array.isArray(columnName)) {
+			if (columnName.length === 1) {
+				columnName = columnName[0];
+			}
+			else {
+				loaderName = `${this.tableName}${columnName.join('-')}DataLoader`;
+			}
+		}
+
+		if (!loaderName) {
+			loaderName = `${this.tableName}${columnName}DataLoader`;
+		}
+
 		let cache = true;
 		if (!ctx) {
 			ctx = globalLoaderContext;
@@ -185,11 +223,22 @@ class BaseModel extends Model {
 
 		if (!ctx[loaderName]) {
 			ctx[loaderName] = new DataLoader(async (keys) => {
+				let uniqFunc;
+				if (Array.isArray(columnName)) {
+					uniqFunc = item => item.join('-');
+				}
+
 				// this is for avoiding un-necessary queries where the value is 0 or null
-				const filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
+				const filteredKeys = _.uniqBy(keys.filter(key => (key && key !== '0')), uniqFunc);
+
 				let results = [];
 				if (filteredKeys.length) {
-					results = await this.query().whereIn(columnName, filteredKeys);
+					if (Array.isArray(columnName)) {
+						results = await this.query().whereInComposite(columnName, filteredKeys);
+					}
+					else {
+						results = await this.query().whereIn(columnName, filteredKeys);
+					}
 				}
 				return mapResults(results, keys, columnName);
 			}, {cache});
@@ -272,7 +321,12 @@ class BaseModel extends Model {
 	static _loadByColumn(columnName, columnValue, ctx = null) {
 		if (!columnValue || columnValue === '0') return null;
 
-		if (Array.isArray(columnValue)) {
+		if (Array.isArray(columnName)) {
+			if (Array.isArray(columnValue[0])) {
+				return this.getLoader(columnName, ctx).loadMany(columnValue);
+			}
+		}
+		else if (Array.isArray(columnValue)) {
 			// change falsy values to false, otherwise dataloader creates problems (does not accept null)
 			columnValue = columnValue.map(val => val || false);
 			return this.getLoader(columnName, ctx).loadMany(columnValue);
