@@ -503,27 +503,24 @@ class BaseModel extends Model {
 			relation instanceof Model.BelongsToOneRelation ||
 			relation instanceof Model.HasOneRelation
 		) {
-			return handleResult(
-				await relation.relatedModelClass
-					.loadByColumn(relatedCols[0], self[ownerCols[0]], options.ctx),
-				options
-			);
+			self[relationName] = await relation.relatedModelClass
+				.loadByColumn(relatedCols[0], self[ownerCols[0]], options.ctx);
+
+			return handleResult(self[relationName], options);
 		}
 		else if (relation instanceof Model.HasManyRelation) {
 			const modify = relation.modify;
 			if (String(modify).indexOf('noop') !== -1) {
-				return handleResult(
-					await relation.relatedModelClass
-						.loadManyByColumn(relatedCols[0], self[ownerCols[0]], options.ctx),
-					options
-				);
+				self[relationName] = await relation.relatedModelClass
+					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], options.ctx);
+
+				return handleResult(self[relationName], options);
 			}
 
-			return handleResult(
-				await relation.relatedModelClass
-					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx, modify}),
-				options
-			);
+			self[relationName] = await relation.relatedModelClass
+				.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx, modify});
+
+			return handleResult(self[relationName], options);
 		}
 		else if (
 			relation instanceof Model.ManyToManyRelation ||
