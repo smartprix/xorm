@@ -3,7 +3,7 @@ import path from 'path';
 import _ from 'lodash';
 import {Model, AjvValidator} from 'objection';
 import DataLoader from 'dataloader';
-import {Cache} from 'sm-utils';
+import {Cache, RedisCache} from 'sm-utils';
 import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
 import UserError from './user_error';
@@ -140,6 +140,14 @@ class BaseModel extends Model {
 		}
 
 		return this.__cache;
+	}
+
+	static get redisCache() {
+		if (!this.__redisCache) {
+			this.__redisCache = new RedisCache(`xorm:${this.name}`);
+		}
+
+		return this.__redisCache;
 	}
 
 	static setGlobalLoaderContext(ctx) {
