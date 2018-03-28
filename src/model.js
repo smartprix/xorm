@@ -380,8 +380,8 @@ class BaseModel extends Model {
 
 		if (!id || id === '0') return null;
 		return this.redisCache.getOrSet(
-			`id:${this.id}`,
-			() => this._loadByColumn(this.idColumn, this.id, ctx),
+			`id:${id}`,
+			() => this._loadByColumn(this.idColumn, id, ctx),
 			{ttl, parse},
 		);
 	}
