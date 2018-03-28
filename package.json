@@ -13,7 +13,7 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "test-only": "mocha test/*.test.js",
-    "build": "babel src --out-dir dist",
+    "build": "rm -rfd dist && babel src --out-dir dist",
     "-precommit": "npm run build && npm test && npm run check-coverage",
     "prepublishOnly": "npm run build"
   },
@@ -26,10 +26,11 @@
     "sm-utils": ">=2.13.2"
   },
   "devDependencies": {
-    "babel-cli": "6.26.0",
-    "babel-plugin-transform-es2015-modules-commonjs": "6.26.0",
-    "babel-preset-stage-0": "6.24.1",
-    "babel-register": "6.26.0",
+    "@babel/cli": "^7.0.0-beta.42",
+    "@babel/core": "^7.0.0-beta.42",
+    "@babel/plugin-proposal-class-properties": "^7.0.0-beta.42",
+    "@babel/preset-env": "^7.0.0-beta.42",
+    "@babel/register": "^7.0.0-beta.42",
     "chai": "4.1.2",
     "eslint": "4.18.1",
     "eslint-config-smartprix": "3.4.2",
@@ -38,10 +39,24 @@
   },
   "babel": {
     "presets": [
-      "stage-0"
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": "current"
+          },
+          "modules": "commonjs",
+          "shippedProposals": true
+        }
+      ]
     ],
     "plugins": [
-      "transform-es2015-modules-commonjs"
+      [
+        "@babel/plugin-proposal-class-properties",
+        {
+          "loose": true
+        }
+      ]
     ],
     "sourceMaps": true
   },
