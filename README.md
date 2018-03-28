@@ -271,16 +271,42 @@ Person.query().where('name', 'Hitesh');
 Instead of doing `Person.query().where()` you can do `Person.where()`
 Instead of doing `Person.query().find()` you can do `Person.find()`
 
-### `$cache` and `cache`
+### `$cache`, `cache` and `redisCache`
 You can use these properties to cache things.
 `$cache` is for instance and `cache` is for the Model
+`redisCache` is cache backed by Redis for the Model
 
 ```js
 class Person extends Model {
+	static getAll() {
+		return this.redisCache.getOrSet('all', () => Person.query());
+	}
+
 	async getChildren() {
 		return this.$cache.getOrSet('children', () => this.$loadRelated('children'));
 	}
 }
+```
+
+### `cacheById`
+You can set `cacheById` if you want to cache items by their id.
+cache will be used when you use `loadById` function.
+Items are automatically removed from cache on `$afterUpdate` and `$afterDelete`
+`cacheById` is an object of `{ttl}`
+
+```js
+class Person extends Model {
+	static cacheById = {
+		ttl: '3h',
+	};
+}
+
+// items are now being cached by their id for 3 hours
+// the following will result in only 2 DB queries
+await Person.loadById(1);
+await Person.loadById(1);
+await Person.loadById([1, 2]);
+await Person.loadById(2);
 ```
 
 ### Easier Relationships

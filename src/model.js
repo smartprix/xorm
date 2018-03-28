@@ -111,6 +111,12 @@ class BaseModel extends Model {
 	static basePath = '';
 	static dataLoaders = {};
 
+	/**
+	 * this can be false or an object of {ttl (in ms or timestring)}
+	 * if this is an object, all items accessed with loadById are cached for ttl duration
+	 */
+	static cacheById = false;
+
 	static createValidator() {
 		return new AjvValidator({
 			onCreateAjv: (ajv) => {
@@ -353,7 +359,31 @@ class BaseModel extends Model {
 	}
 
 	static loadById(id, ctx = null) {
-		return this._loadByColumn(this.idColumn, id, ctx);
+		if (!this.cacheById) {
+			return this._loadByColumn(this.idColumn, id, ctx);
+		}
+
+		const ttl = this.cacheById.ttl || '1d';
+		const parse = this.fromJson.bind(this);
+
+		if (Array.isArray(id)) {
+			if (!id.length) return [];
+
+			return Promise.map(id, idx => (
+				this.redisCache.getOrSet(
+					`id:${idx}`,
+					() => this._loadByColumn(this.idColumn, idx, ctx),
+					{ttl, parse},
+				)
+			));
+		}
+
+		if (!id || id === '0') return null;
+		return this.redisCache.getOrSet(
+			`id:${this.id}`,
+			() => this._loadByColumn(this.idColumn, this.id, ctx),
+			{ttl, parse},
+		);
 	}
 
 	static loadManyByColumn(columnName, columnValue, options = {}) {
@@ -366,6 +396,10 @@ class BaseModel extends Model {
 		}
 
 		return this.getManyLoader(columnName, options).load(columnValue);
+	}
+
+	static deleteCacheById(id) {
+		return this.redisCache.del(`id:${id}`);
 	}
 
 	// base path for requiring models in relations
@@ -582,6 +616,26 @@ class BaseModel extends Model {
 
 	$beforeDelete(context) {
 		super.$beforeDelete(context);
+	}
+
+	async $afterUpdate(opts, queryContext) {
+		await super.$afterUpdate(opts, queryContext);
+		if (!this.cacheById) return;
+
+		const id = queryContext.id || this.id;
+		if (id) {
+			await this.constructor.deleteCacheById(id);
+		}
+	}
+
+	async $afterDelete(queryContext) {
+		await super.$afterDelete(queryContext);
+		if (!this.cacheById) return;
+
+		const id = queryContext.id || this.id;
+		if (id) {
+			await this.constructor.deleteCacheById(id);
+		}
 	}
 
 	static getJsonSchema() {
