@@ -1,0 +1,99 @@
+{
+"Store": [
+{
+	"id": "1",
+	"name": "amazon",
+	"shortName": "amazon",
+	"link": "http:\/\/www.amazon.in\/",
+	"domain": "amazon.in",
+	"status": "ACTIVE",
+	"rating": "9",
+	"createdAt": "2016-08-10 18:11:37",
+	"updatedAt": "2017-07-06 09:35:28",
+	"deletedAt": null
+}
+, {
+	"id": "2",
+	"name": "flipkart",
+	"shortName": "flipkart",
+	"link": "http:\/\/www.flipkart.com\/",
+	"domain": "flipkart.com",
+	"status": "ACTIVE",
+	"rating": "8",
+	"createdAt": "2016-08-10 18:12:19",
+	"updatedAt": "2017-07-06 09:35:20",
+	"deletedAt": null
+}
+, {
+	"id": "3",
+	"name": "snapdeal",
+	"shortName": "snapdeal",
+	"link": "http:\/\/www.snapdeal.com\/",
+	"domain": "snapdeal.com",
+	"status": "ACTIVE",
+	"rating": "6",
+	"createdAt": "2016-08-10 18:12:53",
+	"updatedAt": "2017-07-06 09:35:34",
+	"deletedAt": null
+}
+, {
+	"id": "4",
+	"name": "ebay",
+	"shortName": "ebay",
+	"link": "http:\/\/www.ebay.in\/",
+	"domain": "ebay.in",
+	"status": "INACTIVE",
+	"rating": "6",
+	"createdAt": "2016-11-07 12:47:14",
+	"updatedAt": "2017-07-06 09:35:38",
+	"deletedAt": null
+}
+, {
+	"id": "5",
+	"name": "infibeam",
+	"shortName": "infibeam",
+	"link": "https:\/\/www.infibeam.com\/",
+	"domain": "infibeam.com",
+	"status": "INACTIVE",
+	"rating": "5",
+	"createdAt": "2016-11-08 12:51:11",
+	"updatedAt": "2017-07-06 09:35:43",
+	"deletedAt": null
+}
+, {
+	"id": "6",
+	"name": "paytm",
+	"shortName": "paytm",
+	"link": "http:\/\/www.paytm.com",
+	"domain": "www.paytm.com",
+	"status": "INACTIVE",
+	"rating": "8",
+	"createdAt": "2017-02-28 17:56:44",
+	"updatedAt": "2017-07-06 09:35:48",
+	"deletedAt": null
+}
+, {
+	"id": "7",
+	"name": "jabong",
+	"shortName": "jabong",
+	"link": "http:\/\/www.jabong.com",
+	"domain": "jabong.com",
+	"status": "ACTIVE",
+	"rating": "8",
+	"createdAt": "2017-03-03 18:34:57",
+	"updatedAt": "2017-07-06 09:34:25",
+	"deletedAt": null
+}
+, {
+	"id": "8",
+	"name": "myntra",
+	"shortName": "myntra",
+	"link": "https:\/\/www.myntra.com",
+	"domain": "myntra.com",
+	"status": "ACTIVE",
+	"rating": "8",
+	"createdAt": "2017-07-06 09:37:43",
+	"updatedAt": "2017-07-06 09:37:43",
+	"deletedAt": null
+}
+]}
