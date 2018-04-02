@@ -154,7 +154,7 @@ class BaseModel extends Model {
 
 	$parseJson(json, opt) {
 		json = super.$parseJson(json, opt);
-		this.timestampColumns.forEach((column) => {
+		this.constructor.timestampColumns.forEach((column) => {
 			if (json[column] && !(json[column] instanceof Date)) {
 				json[column] = new Date(json[column]);
 			}
