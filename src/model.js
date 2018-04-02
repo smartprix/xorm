@@ -651,7 +651,7 @@ class BaseModel extends Model {
 
 	async $afterUpdate(opts, queryContext) {
 		await super.$afterUpdate(opts, queryContext);
-		if (!this.cacheById) return;
+		if (!this.constructor.cacheById) return;
 
 		const id = queryContext.id || this.id;
 		if (id) {
@@ -661,7 +661,7 @@ class BaseModel extends Model {
 
 	async $afterDelete(queryContext) {
 		await super.$afterDelete(queryContext);
-		if (!this.cacheById) return;
+		if (!this.constructor.cacheById) return;
 
 		const id = queryContext.id || this.id;
 		if (id) {
