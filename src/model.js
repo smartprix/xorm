@@ -132,6 +132,33 @@ class BaseModel extends Model {
 		});
 	}
 
+	get timestampColumns() {
+		return this.__timestampColumns;
+	}
+
+	set timestampColumns(columns) {
+		if (this.timestamps) {
+			columns.push('createdAt');
+			columns.push('updatedAt');
+		}
+		if (this.softDelete) {
+			columns.push(this.softDeleteColumn);
+		}
+
+		this.__timestampColumns = _.uniq(columns);
+	}
+
+	$parseJson(json, opt) {
+		json = super.$parseJson(json, opt);
+		this.timestampColumns.forEach((column) => {
+			if (json[column] && !(json[column] instanceof Date)) {
+				json[column] = new Date(json[column]);
+			}
+		});
+
+		return json;
+	}
+
 	get $cache() {
 		if (!this.__cache) {
 			this.__cache = new Cache();
@@ -650,7 +677,7 @@ class BaseModel extends Model {
 			if (jsonSchema && jsonSchema.properties) {
 				const columns = this.systemColumns || [];
 				columns.forEach((column) => {
-					jsonSchema.properties[column] = {type: ['datetime', 'string', 'int', 'null']};
+					jsonSchema.properties[column] = {};
 				});
 			}
 

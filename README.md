@@ -65,6 +65,17 @@ Person.query().onlyTrashed();
 Person.query().forceDelete();
 ```
 
+### Timestamp Columns
+You can set `timestampColumns` property of the model class to convert some columns to `Date` automatically while making objects from `fromJson` or `insert`.
+
+`createdAt`, `updatedAt` and `deletedAt` are automatically added to `timestampColumns`
+
+```js
+class Person extends Model {
+	static timestampColumns = ['lastLoginTime', 'bannedAt'];
+}
+```
+
 ### GraphQL Helpers
 There are some graphql helper functions defined. You should use them because they
 take care of batching and optimizations.
