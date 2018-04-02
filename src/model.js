@@ -133,6 +133,10 @@ class BaseModel extends Model {
 	}
 
 	get timestampColumns() {
+		if (!this.__timestampColumns) {
+			this.timestampColumns = [];
+		}
+
 		return this.__timestampColumns;
 	}
 
