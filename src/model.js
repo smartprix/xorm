@@ -132,7 +132,7 @@ class BaseModel extends Model {
 		});
 	}
 
-	get timestampColumns() {
+	static get timestampColumns() {
 		if (!this.__timestampColumns) {
 			this.timestampColumns = [];
 		}
@@ -140,7 +140,7 @@ class BaseModel extends Model {
 		return this.__timestampColumns;
 	}
 
-	set timestampColumns(columns) {
+	static set timestampColumns(columns) {
 		if (this.timestamps) {
 			columns.push('createdAt');
 			columns.push('updatedAt');
