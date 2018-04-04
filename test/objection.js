@@ -2,7 +2,7 @@ import {Model} from '../src/index';
 import Knex from 'knex';
 import path from 'path';
 
-import knexfile from '../knexfile';
+import knexfile from './knexfile';
 
 const knexConfig = knexfile[process.env.NODE_ENV] || knexfile.development;
 const knex = Knex(knexConfig);

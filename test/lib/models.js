@@ -6,6 +6,8 @@ const exported = {};
 const models = [
 	'Store',
 	'KnexUtils',
+	'Category',
+	'Brand',
 ];
 
 const modelMap = {};

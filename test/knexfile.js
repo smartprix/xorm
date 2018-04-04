@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const config = require('./config.js');
+const config = require('../config.js');
 
 const connection = _.merge({
 	database: 'xorm',

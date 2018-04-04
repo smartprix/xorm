@@ -4,7 +4,7 @@
 // it can used from places where babel is not available
 const fs = require('fs');
 const Knex = require('knex');
-const knexfile = require('../../knexfile');
+const knexfile = require('../knexfile');
 const Promise = require('bluebird');
 
 let globalKnex;
