@@ -112,7 +112,11 @@ class BaseModel extends Model {
 	static dataLoaders = {};
 
 	/**
-	 * this can be false or an object of {ttl (in ms or timestring)}
+	 * this can be false or an object of {
+	 * 		ttl (in ms or timestring),
+	 * 		columns: [] (include only these columns while caching)
+	 * 		excludeColumns: [] (exclude these columns while caching)
+	 * }
 	 * if this is an object, all items accessed with loadById are cached for ttl duration
 	 */
 	static cacheById = false;
@@ -389,13 +393,35 @@ class BaseModel extends Model {
 		return this._loadByColumn(columnName, columnValue, ctx);
 	}
 
+	static fromJsonSimple(json) {
+		if (!json) return null;
+		return this.fromJson(json, {
+			skipValidation: true,
+			skipParseRelations: true,
+		});
+	}
+
 	static loadById(id, ctx = null) {
 		if (!this.cacheById) {
 			return this._loadByColumn(this.idColumn, id, ctx);
 		}
 
 		const ttl = this.cacheById.ttl || '1d';
-		const parse = this.fromJson.bind(this);
+		const parse = this.fromJsonSimple.bind(this);
+
+		const singleItem = async (idx) => {
+			let item = await this._loadByColumn(this.idColumn, idx, ctx);
+			if (!item) return null;
+
+			if (this.cacheById.columns) {
+				item = _.pick(item, this.cacheById.columns);
+			}
+			if (this.cacheById.excludeColumns) {
+				item = _.omit(item, this.cacheById.excludeColumns);
+			}
+
+			return item;
+		};
 
 		if (Array.isArray(id)) {
 			if (!id.length) return [];
@@ -403,7 +429,7 @@ class BaseModel extends Model {
 			return Promise.map(id, idx => (
 				this.redisCache.getOrSet(
 					`id:${idx}`,
-					() => this._loadByColumn(this.idColumn, idx, ctx),
+					() => singleItem(idx),
 					{ttl, parse},
 				)
 			));
@@ -412,7 +438,7 @@ class BaseModel extends Model {
 		if (!id || id === '0') return null;
 		return this.redisCache.getOrSet(
 			`id:${id}`,
-			() => this._loadByColumn(this.idColumn, id, ctx),
+			() => singleItem(id),
 			{ttl, parse},
 		);
 	}
