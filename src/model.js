@@ -105,6 +105,15 @@ let globalLoaderContext = {};
 */
 class BaseModel extends Model {
 	static useLimitInFirst = true;
+
+	/**
+	 * timestamps can be true, false or an object of {createdAt, updatedAt}
+	 * if true, createdAt and updatedAt columns will automatically be updated
+	 * you can change column names using an object
+	 *  eg. `{createdAt: 'add_time', updatedAt: 'modify_time'}`
+	 * if you omit one column in the object, that column won't be touched at all
+	 *  eg. if you don't want updatedAt => `timestamps = {createdAt: 'createdAt'}`
+	 */
 	static timestamps = true;
 	static softDelete = false;
 	static Error = UserError;
@@ -116,6 +125,7 @@ class BaseModel extends Model {
 	 * 		ttl (in ms or timestring),
 	 * 		columns: [] (include only these columns while caching)
 	 * 		excludeColumns: [] (exclude these columns while caching)
+	 * 		maxLocalItems: max items in the local cache of redis (using an lru cache)
 	 * }
 	 * if this is an object, all items accessed with loadById are cached for ttl duration
 	 */
@@ -146,8 +156,18 @@ class BaseModel extends Model {
 
 	static set timestampColumns(columns) {
 		if (this.timestamps) {
-			columns.push('createdAt');
-			columns.push('updatedAt');
+			if (this.timestamps === true) {
+				columns.push('createdAt');
+				columns.push('updatedAt');
+			}
+			else {
+				if (this.timestamps.createdAt) {
+					columns.push(this.timestamps.createdAt);
+				}
+				if (this.timestamps.updatedAt) {
+					columns.push(this.timestamps.updatedAt);
+				}
+			}
 		}
 		if (this.softDelete) {
 			columns.push(this.softDeleteColumn);
@@ -181,6 +201,17 @@ class BaseModel extends Model {
 		}
 
 		return this.__cache;
+	}
+
+	static get idRedisCache() {
+		if (!this.__idRedisCache) {
+			const maxLocalItems = this.cacheById && this.cacheById.maxLocalItems;
+			this.__idRedisCache = new RedisCache(`xorm:${this.name}:id`, {
+				maxLocalItems,
+			});
+		}
+
+		return this.__idRedisCache;
 	}
 
 	static get redisCache() {
@@ -427,8 +458,8 @@ class BaseModel extends Model {
 			if (!id.length) return [];
 
 			return Promise.map(id, idx => (
-				this.redisCache.getOrSet(
-					`id:${idx}`,
+				this.idRedisCache.getOrSet(
+					String(idx),
 					() => singleItem(idx),
 					{ttl, parse},
 				)
@@ -436,8 +467,8 @@ class BaseModel extends Model {
 		}
 
 		if (!id || id === '0') return null;
-		return this.redisCache.getOrSet(
-			`id:${id}`,
+		return this.idRedisCache.getOrSet(
+			String(id),
 			() => singleItem(id),
 			{ttl, parse},
 		);
@@ -456,7 +487,7 @@ class BaseModel extends Model {
 	}
 
 	static deleteCacheById(id) {
-		return this.redisCache.del(`id:${id}`);
+		return this.idRedisCache.del(String(id));
 	}
 
 	// base path for requiring models in relations
@@ -475,9 +506,21 @@ class BaseModel extends Model {
 	static get systemColumns() {
 		if (!this._systemColumns) {
 			const columns = [];
+
+			// timestamps (createdAt + updatedAt handling)
 			if (this.timestamps) {
-				columns.push('createdAt');
-				columns.push('updatedAt');
+				if (this.timestamps === true) {
+					columns.push('createdAt');
+					columns.push('updatedAt');
+				}
+				else {
+					if (this.timestamps.createdAt) {
+						columns.push(this.timestamps.createdAt);
+					}
+					if (this.timestamps.updatedAt) {
+						columns.push(this.timestamps.updatedAt);
+					}
+				}
 			}
 
 			if (this.softDelete) {
@@ -658,16 +701,33 @@ class BaseModel extends Model {
 
 	$beforeInsert(context) {
 		super.$beforeInsert(context);
-		if (this.constructor.timestamps && !context.dontTouch) {
-			this.createdAt = new Date().toISOString();
-			this.updatedAt = new Date().toISOString();
+		const timestamps = this.constructor.timestamps;
+		if (timestamps && !context.dontTouch) {
+			if (timestamps === true) {
+				this.createdAt = new Date().toISOString();
+				this.updatedAt = new Date().toISOString();
+			}
+			else {
+				if (timestamps.createdAt) {
+					this[timestamps.createdAt] = new Date().toISOString();
+				}
+				if (timestamps.updatedAt) {
+					this[timestamps.updatedAt] = new Date().toISOString();
+				}
+			}
 		}
 	}
 
 	$beforeUpdate(opt, context) {
 		super.$beforeUpdate(opt, context);
-		if (this.constructor.timestamps && !context.dontTouch) {
-			this.updatedAt = new Date().toISOString();
+		const timestamps = this.constructor.timestamps;
+		if (timestamps && !context.dontTouch) {
+			if (timestamps === true) {
+				this.updatedAt = new Date().toISOString();
+			}
+			else if (timestamps.updatedAt) {
+				this[timestamps.updatedAt] = new Date().toISOString();
+			}
 		}
 	}
 

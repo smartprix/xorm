@@ -26,6 +26,19 @@ class Person extends Model {
 Every model has automatically managed timestamps (`createdAt` and `updatedAt`), which gets updated whenever the model is created or updated.
 For disabling the timestamps you can do `static timestamps = false;` in your model.
 
+`timestamps` can be true, false or an object of `{createdAt, updatedAt}`. If true, `createdAt` and `updatedAt` columns will automatically be updated.
+
+You can change column names using an object.
+```js
+static timestamps = {createdAt: 'add_time', updatedAt: 'modify_time'};
+```
+
+If you omit one column in the object, that column won't be touched at all
+eg. if you don't want updatedAt:
+```js
+static timestamps = {createdAt: 'createdAt'};
+```
+
 For dealing with timestamp few extra methods are added:
 `touch`: update `updatedAt` of the model to current time.
 `dontTouch`: don't update the timestamps after executing the query
@@ -303,7 +316,7 @@ class Person extends Model {
 You can set `cacheById` if you want to cache items by their id.
 cache will be used when you use `loadById` function.
 Items are automatically removed from cache on `$afterUpdate` and `$afterDelete`
-`cacheById` is an object of `{ttl}`
+`cacheById` is an object of `{ttl, columns, excludeColumns, maxLocalItems}`
 
 ```js
 class Person extends Model {
