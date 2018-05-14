@@ -38,7 +38,7 @@ class BaseQueryBuilder extends QueryBuilder {
 		const patchFields = _.assign({}, fields);
 		delete patchFields[id];
 
-		return this.patch(patchFields).where(id, fields[id]);
+		return this.mergeContext({id}).patch(patchFields).where(id, fields[id]);
 	}
 
 	saveAndFetch(fields) {
@@ -50,7 +50,7 @@ class BaseQueryBuilder extends QueryBuilder {
 		const patchFields = _.assign({}, fields);
 		delete patchFields[id];
 
-		return this.patchAndFetchById(fields[id], patchFields);
+		return this.mergeContext({id}).patchAndFetchById(fields[id], patchFields);
 	}
 
 	updateById(id, fields) {
