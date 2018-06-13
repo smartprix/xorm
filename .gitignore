@@ -3,3 +3,7 @@ coverage
 .vscode
 .idea
 dist
+
+# No need to commit yarn.lock & package-lock.json
+yarn.lock
+package-lock.json
