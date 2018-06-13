@@ -38,7 +38,8 @@ class BaseQueryBuilder extends QueryBuilder {
 		const patchFields = _.assign({}, fields);
 		delete patchFields[id];
 
-		return this.mergeContext({id}).patch(patchFields).where(id, fields[id]);
+		const context = {[id]: fields[id]};
+		return this.mergeContext(context).patch(patchFields).where(id, fields[id]);
 	}
 
 	saveAndFetch(fields) {
@@ -50,22 +51,26 @@ class BaseQueryBuilder extends QueryBuilder {
 		const patchFields = _.assign({}, fields);
 		delete patchFields[id];
 
-		return this.mergeContext({id}).patchAndFetchById(fields[id], patchFields);
+		const context = {[id]: fields[id]};
+		return this.mergeContext(context).patchAndFetchById(fields[id], patchFields);
 	}
 
 	updateById(id, fields) {
 		const idColumn = this.modelClass().idColumn;
-		return this.mergeContext({id}).update(fields).whereComposite(idColumn, id);
+		const context = {[idColumn]: id};
+		return this.mergeContext(context).update(fields).whereComposite(idColumn, id);
 	}
 
 	patchById(id, fields) {
 		const idColumn = this.modelClass().idColumn;
-		return this.mergeContext({id}).patch(fields).whereComposite(idColumn, id);
+		const context = {[idColumn]: id};
+		return this.mergeContext(context).patch(fields).whereComposite(idColumn, id);
 	}
 
 	deleteById(id) {
 		const idColumn = this.modelClass().idColumn;
-		return this.mergeContext({id}).delete().whereComposite(idColumn, id);
+		const context = {[idColumn]: id};
+		return this.mergeContext(context).delete().whereComposite(idColumn, id);
 	}
 
 	whereByOr(obj) {
