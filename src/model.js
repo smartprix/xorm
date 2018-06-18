@@ -616,7 +616,7 @@ class BaseModel extends Model {
 	async loadByRelation(relationName, options = {}) {
 		const relation = this.constructor.getRelation(relationName);
 		if (!relation) {
-			throw new Error(`relation ${relationName} is not defined in ${this.name}`);
+			throw new Error(`relation ${relationName} is not defined in ${this.constructor.name}`);
 		}
 
 		const relatedCols = (relation.relatedProp && relation.relatedProp.cols) || [];
@@ -683,7 +683,7 @@ class BaseModel extends Model {
 	}
 
 	static getRelationResolver(relationName, options = {}) {
-		const relation = this.constructor.getRelation(relationName);
+		const relation = this.getRelation(relationName);
 		if (!relation) {
 			throw new Error(`relation ${relationName} is not defined in ${this.name}`);
 		}
