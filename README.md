@@ -100,7 +100,9 @@ returns a resolver for GraphQL query where you query the item by a single unique
 `Query: { category: Category.getFindOneResolver() }`
 
 #### `getRelationResolver(relationName, options = {})`
-returns a resolver for a relation that is defined in the model.
+Returns a resolver for a relation that is defined in the model.
+
+You can override the default related resolver by defining `selfRelationResolver(relation, options)` in the related model.
 
 `type Store { id: ID!, name: String!, category: Category }`
 `Store: { category: Store.getRelationResolver('category') }`

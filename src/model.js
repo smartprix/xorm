@@ -683,6 +683,15 @@ class BaseModel extends Model {
 	}
 
 	static getRelationResolver(relationName, options = {}) {
+		const relation = this.constructor.getRelation(relationName);
+		if (!relation) {
+			throw new Error(`relation ${relationName} is not defined in ${this.name}`);
+		}
+
+		if (relation.relatedModelClass.selfRelationResolver) {
+			return relation.relatedModelClass.selfRelationResolver(relation, options);
+		}
+
 		return (async (obj, args) => {
 			options.args = args;
 			return obj.loadByRelation(relationName, options);
