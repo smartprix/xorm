@@ -32,6 +32,10 @@ class BaseQueryBuilder extends QueryBuilder {
 	save(fields) {
 		const id = this.modelClass().idColumn;
 		if (!(id in fields)) {
+			// modelClass has a generateId function, use that
+			if (this.modelClass().generateId) {
+				fields.id = this.modelClass().generateId();
+			}
 			return this.insert(fields);
 		}
 
@@ -45,6 +49,10 @@ class BaseQueryBuilder extends QueryBuilder {
 	saveAndFetch(fields) {
 		const id = this.modelClass().idColumn;
 		if (!(id in fields)) {
+			// modelClass has a generateId function, use that
+			if (this.modelClass().generateId) {
+				fields.id = this.modelClass().generateId();
+			}
 			return this.insertAndFetch(fields);
 		}
 
