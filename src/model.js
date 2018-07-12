@@ -93,6 +93,23 @@ async function handleResult(obj, options) {
 	return obj;
 }
 
+async function limitFilter(values, fn, limit, offset = 0, nonNull = false) {
+	if (!limit || offset >= values.length) return [];
+
+	if (limit >= values.length) {
+		let results = (await fn(values)) || [];
+		if (nonNull) results = results.filter(val => val != null);
+		return results;
+	}
+
+	let results = (await fn(values.slice(offset, limit))) || [];
+	if (nonNull) results = results.filter(val => val != null);
+	if (results.length >= limit) return results;
+
+	const extraResults = await limitFilter(values, fn, limit - results.length, offset + limit);
+	return results.concat(extraResults);
+}
+
 let globalLoaderContext = {};
 
 /**
@@ -152,6 +169,10 @@ class BaseModel extends Model {
 		}
 
 		return this.__timestampColumns;
+	}
+
+	static setRedisCacheGlobalPrefix(prefix = 'a') {
+		RedisCache.globalPrefix = prefix;
 	}
 
 	static set timestampColumns(columns) {
@@ -398,30 +419,68 @@ class BaseModel extends Model {
 		return this.getLoader(this.idColumn, ctx);
 	}
 
-	static _loadByColumn(columnName, columnValue, ctx = null) {
+	/**
+	 * load result by column, using dataloader
+	 * @param {string|array} columnName can be a string or an array of strings for composite loading
+	 * @param {any} columnValue can be single or an array
+	 * @param {object} options object of {
+	 * 	ctx: context for the dataloader [optional / default null]
+	 * 	nonNull: only return nonNull results [default false]
+	 * 	limit: only return this many results [default null => return as many results as possible]
+	 * 	offset: in conjunction with limit [default 0]
+	 * }
+	 */
+	static async _loadByColumn(columnName, columnValue, options = {}) {
 		if (!columnValue || columnValue === '0') return null;
 
+		let manyLoader = false;
 		if (Array.isArray(columnName)) {
+			// many loader in case of composite columns, eg. [a, b] in [[1,2], [3,4]]
 			if (Array.isArray(columnValue[0])) {
-				return this.getLoader(columnName, ctx).loadMany(columnValue);
+				manyLoader = true;
 			}
 		}
 		else if (Array.isArray(columnValue)) {
-			// change falsy values to false, otherwise dataloader creates problems (does not accept null)
-			columnValue = columnValue.map(val => val || false);
-			return this.getLoader(columnName, ctx).loadMany(columnValue);
+			// many loader in case of normal columns, eg. a in [1, 2, 3, 4]
+			manyLoader = true;
 		}
 
-		return this.getLoader(columnName, ctx).load(columnValue);
+		if (manyLoader) {
+			if (options.nonNull) {
+				columnValue = columnValue.filter(val => (val && val !== '0'));
+			}
+			else {
+				// change falsy values to false
+				// otherwise dataloader creates problems (does not accept null)
+				columnValue = columnValue.map(val => val || false);
+			}
+
+			if (options.limit) {
+				const loader = this.getLoader(columnName, options.ctx);
+				return limitFilter(
+					columnValue,
+					values => loader.loadMany(values),
+					options.limit,
+					options.offset || 0,
+					options.nonNull,
+				);
+			}
+
+			let results = await this.getLoader(columnName, options.ctx).loadMany(columnValue);
+			if (options.nonNull) results = results.filter(val => val != null);
+			return results;
+		}
+
+		return this.getLoader(columnName, options.ctx).load(columnValue);
 	}
 
-	static loadByColumn(columnName, columnValue, ctx = null) {
+	static loadByColumn(columnName, columnValue, options = {}) {
 		// separate loadById and loadByColumn, in case we override loadById
 		if (columnName === this.idColumn) {
-			return this.loadById(columnValue, ctx);
+			return this.loadById(columnValue, options);
 		}
 
-		return this._loadByColumn(columnName, columnValue, ctx);
+		return this._loadByColumn(columnName, columnValue, options);
 	}
 
 	static fromJsonSimple(json) {
@@ -432,16 +491,16 @@ class BaseModel extends Model {
 		});
 	}
 
-	static loadById(id, ctx = null) {
+	static loadById(id, options = {}) {
 		if (!this.cacheById) {
-			return this._loadByColumn(this.idColumn, id, ctx);
+			return this._loadByColumn(this.idColumn, id, options);
 		}
 
 		const ttl = this.cacheById.ttl || '1d';
 		const parse = this.fromJsonSimple.bind(this);
 
 		const singleItem = async (idx) => {
-			let item = await this._loadByColumn(this.idColumn, idx, ctx);
+			let item = await this._loadByColumn(this.idColumn, idx, options);
 			if (!item) return null;
 
 			if (this.cacheById.columns) {
@@ -572,14 +631,14 @@ class BaseModel extends Model {
 	static getFindOneResolver(options = {}) {
 		return (async (root, args) => {
 			if (args[this.idColumn]) {
-				return this.loadById(args[this.idColumn], options.ctx);
+				return this.loadById(args[this.idColumn], {ctx: options.ctx});
 			}
 
 			const keys = Object.keys(args);
 			if (!keys.length) return null;
 
 			if (keys.length === 1) {
-				return this.loadByColumn(keys[0], args[keys[0]], options.ctx);
+				return this.loadByColumn(keys[0], args[keys[0]], {ctx: options.ctx});
 			}
 
 			const query = this.query();
@@ -646,7 +705,7 @@ class BaseModel extends Model {
 			relation instanceof Model.HasOneRelation
 		) {
 			self[relationName] = await relation.relatedModelClass
-				.loadByColumn(relatedCols[0], self[ownerCols[0]], options.ctx);
+				.loadByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx});
 
 			return handleResult(self[relationName], options);
 		}
@@ -700,7 +759,7 @@ class BaseModel extends Model {
 
 	static getFindByIdSubResolver(propName, options = {}) {
 		if (!propName) propName = `${_.camelCase(this.name)}Id`;
-		return (async obj => this.loadById(obj[propName], options.ctx));
+		return (async obj => this.loadById(obj[propName], {ctx: options.ctx}));
 	}
 
 	static getDeleteByIdResolver() {
