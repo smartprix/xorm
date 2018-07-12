@@ -1,6 +1,6 @@
 {
   "name": "xorm",
-  "version": "0.6.41",
+  "version": "0.6.42",
   "description": "ORM based on ObjectionJS with some extra utilities",
   "main": "dist/index.js",
   "repository": "smartprix/xorm",
