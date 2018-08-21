@@ -8,6 +8,8 @@ import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
 import UserError from './user_error';
 
+let LocalRedisCache = RedisCache;
+
 const httpUrlPattern = new RegExp(
 	'^(https?:\\/\\/)?' + // protocol
 	'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
@@ -171,8 +173,12 @@ class BaseModel extends Model {
 		return this.__timestampColumns;
 	}
 
+	static setRedisCacheClass(redisCacheClass) {
+		LocalRedisCache = redisCacheClass;
+	}
+
 	static setRedisCacheGlobalPrefix(prefix = 'a') {
-		RedisCache.globalPrefix = prefix;
+		LocalRedisCache.globalPrefix = prefix;
 	}
 
 	static set timestampColumns(columns) {
@@ -227,7 +233,7 @@ class BaseModel extends Model {
 	static get idRedisCache() {
 		if (!this.__idRedisCache) {
 			const maxLocalItems = this.cacheById && this.cacheById.maxLocalItems;
-			this.__idRedisCache = new RedisCache(`xorm:${this.name}:id`, {
+			this.__idRedisCache = new LocalRedisCache(`xorm:${this.name}:id`, {
 				maxLocalItems,
 			});
 		}
@@ -237,7 +243,7 @@ class BaseModel extends Model {
 
 	static get redisCache() {
 		if (!this.__redisCache) {
-			this.__redisCache = new RedisCache(`xorm:${this.name}`);
+			this.__redisCache = new LocalRedisCache(`xorm:${this.name}`);
 		}
 
 		return this.__redisCache;
