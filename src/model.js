@@ -173,14 +173,21 @@ class BaseModel extends Model {
 		return this.__timestampColumns;
 	}
 
+	// set the RedisCache class used internally by xorm
 	static setRedisCacheClass(redisCacheClass) {
 		LocalRedisCache = redisCacheClass;
+		if (this._redisCachePrefix) {
+			this.setRedisCacheGlobalPrefix(this._redisCachePrefix);
+		}
 	}
 
+	// set global prefix for the rediscache used internally by xorm
 	static setRedisCacheGlobalPrefix(prefix = 'a') {
+		this._redisCachePrefix = prefix;
 		LocalRedisCache.globalPrefix = prefix;
 	}
 
+	// define which columns will be converted to Date object when parsing this model
 	static set timestampColumns(columns) {
 		if (this.timestamps) {
 			if (this.timestamps === true) {
@@ -249,11 +256,17 @@ class BaseModel extends Model {
 		return this.__redisCache;
 	}
 
+	// set the default context for the dataloader used by loader functions
 	static setGlobalLoaderContext(ctx) {
 		globalLoaderContext = ctx;
 	}
 
 	// make a loader so you can use it to batch queries which are not covered by existing loaders
+	// options can be
+	//   ignoreResults: [default false] ignore the results returned by the loader function
+	//   mapBy: [default 'id'] map results returned by the loaderFn using this key
+	//   cache: [default false] cache the results returned by loaderFn indefinitely
+	//   filterKeys: [default true] filter the falsy keys before calling loaderFn, filterKeys can also be a function
 	static makeLoader(loaderName, loaderFunc, options = {}) {
 		const loaderKey = `${this.tableName}Custom${loaderName}DataLoader`;
 		if (globalLoaderContext[loaderKey]) return globalLoaderContext[loaderKey];
@@ -306,6 +319,7 @@ class BaseModel extends Model {
 		return globalLoaderContext[loaderKey];
 	}
 
+	// get the loader for a specific column name
 	static getLoader(columnName, ctx = null) {
 		let loaderName;
 
@@ -480,6 +494,17 @@ class BaseModel extends Model {
 		return this.getLoader(columnName, options.ctx).load(columnValue);
 	}
 
+	/**
+	 * load result by column, using dataloader
+	 * @param {string|array} columnName can be a string or an array of strings for composite loading
+	 * @param {any} columnValue can be single or an array
+	 * @param {object} options object of {
+	 * 	ctx: context for the dataloader [optional / default null]
+	 * 	nonNull: only return nonNull results [default false]
+	 * 	limit: only return this many results [default null => return as many results as possible]
+	 * 	offset: in conjunction with limit [default 0]
+	 * }
+	 */
 	static loadByColumn(columnName, columnValue, options = {}) {
 		// separate loadById and loadByColumn, in case we override loadById
 		if (columnName === this.idColumn) {
@@ -497,6 +522,16 @@ class BaseModel extends Model {
 		});
 	}
 
+	/**
+	 * load result by id, using dataloader
+	 * @param {any} id can be single or an array
+	 * @param {object} options object of {
+	 * 	ctx: context for the dataloader [optional / default null]
+	 * 	nonNull: only return nonNull results [default false]
+	 * 	limit: only return this many results [default null => return as many results as possible]
+	 * 	offset: in conjunction with limit [default 0]
+	 * }
+	 */
 	static loadById(id, options = {}) {
 		if (!this.cacheById) {
 			return this._loadByColumn(this.idColumn, id, options);
@@ -719,7 +754,7 @@ class BaseModel extends Model {
 			const modify = relation.modify;
 			if (String(modify).indexOf('noop') !== -1) {
 				self[relationName] = await relation.relatedModelClass
-					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], options.ctx);
+					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx});
 
 				return handleResult(self[relationName], options);
 			}

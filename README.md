@@ -193,14 +193,26 @@ User.getManyLoader('country').load('IN');
 User.getManyLoader('country').loadMany(['IN', 'US']);
 ```
 
-#### `loadById(id, ctx)`
-Short for `getIdLoader(ctx).load(id)`
+#### `loadById(id, options = {})`
+Short for `getIdLoader(options.ctx).load(id)`
 
-#### `loadByColumn(columnName, columnValue, ctx)`
-Short for `getLoader(columnName, columnValue).load(ctx)`
+#### `loadByColumn(columnName, columnValue, options = {})`
+Short for `getLoader(columnName, options.ctx).load(columnValue)`
 
-#### `loadManyByColumn(columnName, columnValue, ctx)`
-Short for `getManyLoader(columnName, ctx).load(columnValue)`
+#### NOTE
+Both `loadById` and `loadByColumn` can accept options which can an object of
+
+```js
+{
+	ctx: null, // context for the dataloader [optional / default null]
+	nonNull: false, // only return nonNull results [default false]
+	limit: null, // only return this many results [default null => return as many results as possible]
+	offset: 0, // in conjunction with limit [default 0]
+}
+```
+
+#### `loadManyByColumn(columnName, columnValue, options = {ctx})`
+Short for `getManyLoader(columnName, options).load(columnValue)`
 
 #### `loadByRelation(relationName, options = {ctx, args})`
 You can use this to get a related model. This will automatically take care of batching. `args` can be used to pass arguments to `beforeResolve` and `afterResolve`
