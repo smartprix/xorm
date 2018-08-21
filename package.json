@@ -21,20 +21,18 @@
   "license": "ISC",
   "dependencies": {
     "dataloader": "^1.4.0",
-    "lodash": "^4.17.10",
-    "objection": "^1.1.10",
-    "sm-utils": "^2.13.15"
+    "lodash": "^4.17.10"
   },
   "devDependencies": {
-    "@babel/cli": "^7.0.0-beta.51",
-    "@babel/core": "^7.0.0-beta.51",
-    "@babel/plugin-proposal-class-properties": "^7.0.0-beta.51",
-    "@babel/preset-env": "^7.0.0-beta.51",
-    "@babel/register": "^7.0.0-beta.51",
+    "@babel/cli": "^7.0.0-rc.1",
+    "@babel/core": "^7.0.0-rc.1",
+    "@babel/plugin-proposal-class-properties": "^7.0.0-rc.1",
+    "@babel/preset-env": "^7.0.0-rc.1",
+    "@babel/register": "^7.0.0-rc.1",
     "chai": "4.1.2",
-    "eslint": "4.19.1",
+    "eslint": "5.4.0",
     "eslint-config-smartprix": "3.4.2",
-    "knex": "^0.14.6",
+    "knex": "^0.15.2",
     "mocha": "5.2.0"
   },
   "babel": {
@@ -65,5 +63,9 @@
     "rules": {
       "vue/script-indent": 0
     }
+  },
+  "peerDependencies": {
+    "objection": "^1.2.2",
+    "sm-utils": "^2.14.5"
   }
 }
