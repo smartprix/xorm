@@ -6,7 +6,7 @@ import DataLoader from 'dataloader';
 import {Cache, RedisCache} from 'sm-utils';
 import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
-import UserError from './user_error';
+import {customUserError} from './user_error';
 
 let LocalRedisCache = RedisCache;
 
@@ -135,9 +135,12 @@ class BaseModel extends Model {
 	 */
 	static timestamps = true;
 	static softDelete = false;
-	static Error = UserError;
 	static basePath = '';
 	static dataLoaders = {};
+	static get Error() {
+		if (!this._Error) this._Error = customUserError(this.name);
+		return this._Error;
+	}
 
 	/**
 	 * this can be false or an object of {
