@@ -1,6 +1,6 @@
 import {
-	Model as BaseModel,
-	QueryBuilder as BaseQueryBuilder,
+	Model as ObjectionModel,
+	QueryBuilder as ObjectionQueryBuilder,
 	Pojo,
 	ModelOptions,
 	JsonSchema,
@@ -14,6 +14,11 @@ import {
 	ref as refType,
 	lit as litType,
 	raw as rawType,
+	Executable,
+	PartialUpdate,
+	QueryBuilderYieldingCount,
+	QueryBuilderYieldingOne,
+	QueryBuilderYieldingOneOrNone,
 	snakeCaseMappers as snakeCaseMappersType,
 	knexSnakeCaseMappers as knexSnakeCaseMappersType,
 } from 'objection';
@@ -35,14 +40,50 @@ declare module 'xorm' {
 
 	class UserError extends Error {
 		constructor(message : any);
+		model: string;
+		data: any;
 	}
 	
-	// class QueryBuilder<T extends Model, RM = T[], RV = RM> extends BaseQueryBuilder<T, RM, RV> {
-	// 	loaderContext(ctx: object|null): void;
-	// 	loaderCtx(ctx: object|null): void;
-	// 	findById(id: any): T;
-	// 	throwIfNotFound(): QueryBuilder<T, RM>;
-	// }
+	class QueryBuilder<QM extends ObjectionModel, RM = QM[], RV = RM> extends ObjectionQueryBuilder<QM, RM, RV> {
+		loaderContext(ctx: object|null): void;
+		loaderCtx(ctx: object|null): void;
+		find(...args: any[]): QueryBuilderYieldingOneOrNone<QM>;
+		save(fields: Partial<QM>): QueryBuilderYieldingCount<QM, RM>;
+		saveAndFetch<QM extends Model>(fields: object): QueryBuilderYieldingOne<QM>;
+		updateById(id: any, fields: PartialUpdate<QM>): QueryBuilderYieldingCount<QM, RM>;
+		patchById(id: any, fields: PartialUpdate<QM>): QueryBuilderYieldingCount<QM, RM>;
+		whereByOr(obj: Partial<QM>): QueryBuilder<QM, RM, RV>;
+		whereByAnd(obj: Partial<QM>): QueryBuilder<QM, RM, RV>;
+		/**
+		 * order the items by position in the array given (of column)
+	 	 * this is mostly useful in whereIn queries where you need ordered results
+		 * @param column values of which column 
+		 * @param values values of the columns
+		 */
+		orderByArrayPos(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
+		orderByArrayPosition(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
+		/**
+		 * this is equivalent to `this.where(column, values).orderByArrayPos(column, values)`
+		 * use this for returning results ordered in the way you gave them
+		 */
+		whereInOrdered(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
+		andWhereInOrdered(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
+		withoutScope(withoutScope?: boolean): QueryBuilder<QM, RM, RV>;
+		/*
+		 * Wraps the where condition till now into braces
+		 * so builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');
+		 * becomes "WHERE (a = 'b' OR c = 'd') AND e = 'f'"
+		 */
+		wrapWhere(): QueryBuilder<QM, RM, RV>;
+		withTrashed(withTrashed?: boolean): QueryBuilder<QM, RM, RV>;
+		onlyTrashed(onlyTrashed?: boolean): QueryBuilder<QM, RM, RV>;
+		softDelete(): QueryBuilderYieldingCount<QM, RM>;
+		trash(): QueryBuilderYieldingCount<QM, RM>;
+		forceDelete(): QueryBuilderYieldingCount<QM, RM>;
+		restore(): QueryBuilderYieldingCount<QM, RM>;
+		touch(): QueryBuilderYieldingCount<QM, RM>;
+		dontTouch(): QueryBuilder<QM, RM, RV>;
+	}
 
 	interface loaderOpts {
 		/**
@@ -67,7 +108,7 @@ declare module 'xorm' {
 		filterKeys?: boolean | ((keys: any) => boolean);
 	}
 
-	class Model extends BaseModel {
+	class Model extends ObjectionModel {
 		static useLimitInFirst: boolean;
 		/**
 		 * timestamps can be true, false or an object of {createdAt, updatedAt}
@@ -121,13 +162,13 @@ declare module 'xorm' {
 		static getRelationLoader(relationName:string, ctx?: object, options?: object): DataLoader<any, any>;
 		static getIdLoader(ctx?: object): DataLoader<any, any>;
 		
-		static loadByColumn<T extends Model>(columnName: string|Array<string>, columnValue: any, options?: object): Promise<T|null>;
-		static loadByColumn<T extends Model>(columnName: string|Array<string>, columnValue: Array<any>, options?: object): Promise<Array<T|null>>;
-		static fromJsonSimple<T extends Model>(json: object): T;
-		static loadById<T extends Model>(this: Constructor<T>, id: any, options?: object): Promise<T|null>;
-		static loadById<T extends Model>(this: Constructor<T>, id: Array<any>, options?: object): Promise<Array<T|null>>;
-		static loadManyByColumn<T extends Model>(columnName: string, columnValue: any, options?: object): Promise<T|null>;
-		static loadManyByColumn<T extends Model>(columnName: string, columnValue: Array<any>, options?: object): Promise<Array<T|null>>;
+		static loadByColumn<QM extends Model>(columnName: string|Array<string>, columnValue: any, options?: object): Promise<QM|null>;
+		static loadByColumn<QM extends Model>(columnName: string|Array<string>, columnValue: Array<any>, options?: object): Promise<Array<QM|null>>;
+		static fromJsonSimple<QM extends Model>(json: object): QM;
+		static loadById<QM extends Model>(this: Constructor<QM>, id: any, options?: object): Promise<QM|null>;
+		static loadById<QM extends Model>(this: Constructor<QM>, id: Array<any>, options?: object): Promise<Array<QM|null>>;
+		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any, options?: object): Promise<QM|null>;
+		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: Array<any>, options?: object): Promise<Array<QM|null>>;
 		
 		static $relations(): void;
 		static belongsTo(model: string|typeof Model, options?: object): void;
@@ -135,22 +176,22 @@ declare module 'xorm' {
 		static hasMany(model: string|typeof Model, options?: object): void;
 		static hasManyThrough(model: string|typeof Model, options?: object): void;
 		
-		static QueryBuilder: typeof BaseQueryBuilder;
-		static where<T extends Model>(
-			this: Constructor<T>,
+		static QueryBuilder: typeof QueryBuilder;
+		static where<QM extends Model>(
+			this: Constructor<QM>,
 			...args: any[],
-		): BaseQueryBuilder<T, T[]>;
+		): QueryBuilder<QM, QM[]>;
 		static find<QM extends Model>(
 			this: Constructor<QM>,
 			...args: any[],
-		): BaseQueryBuilder<QM>;
+		): QueryBuilder<QM>;
 
-		static RelatedQueryBuilder: typeof BaseQueryBuilder;
+		static RelatedQueryBuilder: typeof QueryBuilder;
 		loadByRelation(relationName: string, options?: object): Promise<Model>;
 
-		static getFindOneResolver<T extends Model>(options?: object): (root: object, args: object) => Promise<T|null>;
+		static getFindOneResolver<QM extends Model>(options?: object): (root: object, args: object) => QueryBuilderYieldingOneOrNone<QM>;
 		static getRelationResolver(relationName:string, options?: object): (root: object, args: object) => Promise<Model|null|Array<Model|null>>;
-		static getFindByIdSubResolver<T extends Model>(propName: string, options?: object): (obj: any) => Promise<T|null>;
+		static getFindByIdSubResolver<QM extends Model>(propName: string, options?: object): (obj: any) => Promise<QM|null>;
 		static getDeleteByIdResolver(): (root: object, obj: object) => Promise<{id: any}>;
 
 		$parseJson(json: Pojo, opt?: ModelOptions): Pojo;
