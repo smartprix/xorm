@@ -266,7 +266,8 @@ class BaseModel extends Model {
 	//   ignoreResults: [default false] ignore the results returned by the loader function
 	//   mapBy: [default 'id'] map results returned by the loaderFn using this key
 	//   cache: [default false] cache the results returned by loaderFn indefinitely
-	//   filterKeys: [default true] filter the falsy keys before calling loaderFn, filterKeys can also be a function
+	//   filterKeys: [default true] filter the falsy keys before calling loaderFn,
+	//     filterKeys can also be a function
 	static makeLoader(loaderName, loaderFunc, options = {}) {
 		const loaderKey = `${this.tableName}Custom${loaderName}DataLoader`;
 		if (globalLoaderContext[loaderKey]) return globalLoaderContext[loaderKey];
@@ -557,13 +558,19 @@ class BaseModel extends Model {
 		if (Array.isArray(id)) {
 			if (!id.length) return [];
 
-			return Promise.map(id, idx => (
-				this.idRedisCache.getOrSet(
-					String(idx),
-					() => singleItem(idx),
-					{ttl, parse},
-				)
-			));
+			return limitFilter(
+				id,
+				ids => Promise.map(ids, idx => (
+					this.idRedisCache.getOrSet(
+						String(idx),
+						() => singleItem(idx),
+						{ttl, parse},
+					)
+				)),
+				options.limit,
+				options.offset || 0,
+				options.nonNull,
+			);
 		}
 
 		if (!id || id === '0') return null;
