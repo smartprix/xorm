@@ -109,7 +109,7 @@ class BaseQueryBuilder extends QueryBuilder {
 	 * const query = Model.query().whereIn('id', ids).orderByArrayPos('id', ids);
 	 * ```
 	 * @param  {string} column array contains values of which column
-	 * @param  {Array} array values of the columns
+	 * @param  {Array<any>} values values of the columns
 	 */
 	orderByArrayPos(column, values) {
 		// eslint-disable-next-line

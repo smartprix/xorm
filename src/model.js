@@ -6,7 +6,7 @@ import DataLoader from 'dataloader';
 import {Cache, RedisCache} from 'sm-utils';
 import BaseQueryBuilder from './query_builder';
 import {plural} from './utils';
-import UserError from './user_error';
+import {customUserError} from './user_error';
 
 let LocalRedisCache = RedisCache;
 
@@ -135,9 +135,12 @@ class BaseModel extends Model {
 	 */
 	static timestamps = true;
 	static softDelete = false;
-	static Error = UserError;
 	static basePath = '';
 	static dataLoaders = {};
+	static get Error() {
+		if (!this._Error) this._Error = customUserError(this.name);
+		return this._Error;
+	}
 
 	/**
 	 * this can be false or an object of {
@@ -261,13 +264,26 @@ class BaseModel extends Model {
 		globalLoaderContext = ctx;
 	}
 
-	// make a loader so you can use it to batch queries which are not covered by existing loaders
-	// options can be
-	//   ignoreResults: [default false] ignore the results returned by the loader function
-	//   mapBy: [default 'id'] map results returned by the loaderFn using this key
-	//   cache: [default false] cache the results returned by loaderFn indefinitely
-	//   filterKeys: [default true] filter the falsy keys before calling loaderFn,
-	//     filterKeys can also be a function
+
+	/**
+	 * @typedef {object} loaderOpts
+	 * @property {boolean} [ignoreResults=false] ignore the results returned by the loader function
+	 * 	[default false]
+	 * @property {string} [mapBy='id'] map results returned by the loaderFn using this key
+	 *  [default 'id']
+	 * @property {boolean} [cache=false] cache the results returned by loaderFn indefinitely
+	 *  [default false]
+	 * @property {boolean|function} [filterKeys=true] filter the falsy keys before calling loaderFn
+	 * 	can also be a function, [default true]
+	 */
+
+	/**
+	 * make a loader so you can use it to batch queries which are not covered by existing loaders
+	 * @param {string} loaderName
+	 * @param {function} loaderFunc
+	 * @param {loaderOpts} [options={}]
+	 * @returns {DataLoader}
+	 */
 	static makeLoader(loaderName, loaderFunc, options = {}) {
 		const loaderKey = `${this.tableName}Custom${loaderName}DataLoader`;
 		if (globalLoaderContext[loaderKey]) return globalLoaderContext[loaderKey];
@@ -320,7 +336,12 @@ class BaseModel extends Model {
 		return globalLoaderContext[loaderKey];
 	}
 
-	// get the loader for a specific column name
+	/**
+	 * get the loader for a specific column name
+	 * @param {string|Array<string>} columnName
+	 * @param {object|null} [ctx=null]
+	 * @returns {DataLoader}
+	 */
 	static getLoader(columnName, ctx = null) {
 		let loaderName;
 
@@ -369,6 +390,14 @@ class BaseModel extends Model {
 		return ctx[loaderName];
 	}
 
+	/**
+	 *
+	 * @param {string} columnName
+	 * @param {object} options
+	 * @param {any} options.modify
+	 * @param {object} options.ctx
+	 * @returns {DataLoader}
+	 */
 	static getManyLoader(columnName, options = {}) {
 		let loaderName = `${this.tableName}${columnName}DataLoader`;
 		let cache = true;
@@ -411,6 +440,13 @@ class BaseModel extends Model {
 		return ctx[loaderName];
 	}
 
+	/**
+	 * @param {string} relationName
+	 * @param {null|object} [ctx=null]
+	 * @param {object} [options={}]
+	 * @param {string} options.ownerCol
+	 * @returns {DataLoader}
+	 */
 	static getRelationLoader(relationName, ctx = null, options = {}) {
 		const loaderName = `${this.tableName}Rel${relationName}DataLoader`;
 		let cache = true;
@@ -757,7 +793,7 @@ class BaseModel extends Model {
 
 			return handleResult(self[relationName], options);
 		}
-		else if (relation instanceof Model.HasManyRelation) {
+		if (relation instanceof Model.HasManyRelation) {
 			const modify = relation.modify;
 			if (String(modify).indexOf('noop') !== -1) {
 				self[relationName] = await relation.relatedModelClass
@@ -771,7 +807,7 @@ class BaseModel extends Model {
 
 			return handleResult(self[relationName], options);
 		}
-		else if (
+		if (
 			relation instanceof Model.ManyToManyRelation ||
 			relation instanceof Model.HasOneThroughRelation
 		) {
