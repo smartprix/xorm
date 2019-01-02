@@ -96,9 +96,9 @@ async function handleResult(obj, options) {
 }
 
 async function limitFilter(values, fn, limit, offset = 0, nonNull = false) {
-	if (!limit || offset >= values.length) return [];
+	if (limit === 0 || offset >= values.length) return [];
 
-	if (limit >= values.length) {
+	if (!limit || limit >= values.length) {
 		let results = (await fn(values)) || [];
 		if (nonNull) results = results.filter(val => val != null);
 		return results;
