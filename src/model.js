@@ -457,58 +457,57 @@ class BaseModel extends Model {
 			}
 		}
 
-		if (!ctx[loaderName]) {
-			ctx[loaderName] = new DataLoader(async (keys) => {
-				// this is for avoiding un-necessary queries where the value is 0 or null
-				const filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
-				let results = [];
-				if (filteredKeys.length) {
-					const query = this.query(knex).whereIn(columnName, filteredKeys);
-					if (options.modify) {
-						if (_.isPlainObject(options.modify)) {
-							query.where(options.modify);
-						}
-						else {
-							query.modify(options.modify);
-						}
+		if (ctx[loaderName]) return ctx[loaderName];
+
+		ctx[loaderName] = new DataLoader(async (keys) => {
+			// this is for avoiding un-necessary queries where the value is 0 or null
+			const filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
+			let results = [];
+			if (filteredKeys.length) {
+				const query = this.query(knex).whereIn(columnName, filteredKeys);
+				if (options.modify) {
+					if (_.isPlainObject(options.modify)) {
+						query.where(options.modify);
 					}
-					results = await query;
+					else {
+						query.modify(options.modify);
+					}
 				}
-				return mapManyResults(results, keys, columnName);
-			}, {cache});
-		}
+				results = await query;
+			}
+			return mapManyResults(results, keys, columnName);
+		}, {cache});
 
 		return ctx[loaderName];
 	}
 
 	/**
 	 * @param {string} relationName
-	 * @param {null|object} [ctx=null]
 	 * @param {object} [options={}]
 	 * @param {string} options.ownerCol
+	 * @param {object|null} options.ctx
+	 * @param {object|null} options.knex
 	 * @returns {DataLoader}
 	 */
-	static getRelationLoader(relationName, ctx = null, options = {}) {
+	static getRelationLoader(relationName, options = {}) {
+		const knex = options.knex;
+		const cache = !!options.ctx;
+		const ctx = this._getLoaderCtx(options);
+
 		const loaderName = `${this.tableName}Rel${relationName}DataLoader`;
-		let cache = true;
-		if (!ctx) {
-			ctx = globalLoaderContext;
-			cache = false;
-		}
+		if (ctx[loaderName]) return ctx[loaderName];
 
-		if (!ctx[loaderName]) {
-			ctx[loaderName] = new DataLoader(async (keys) => {
-				const objs = keys.map((key) => {
-					const obj = new this();
-					obj[options.ownerCol || this.idColumn] = key;
-					return obj;
-				});
+		ctx[loaderName] = new DataLoader(async (keys) => {
+			const objs = keys.map((key) => {
+				const obj = new this();
+				obj[options.ownerCol || this.idColumn] = key;
+				return obj;
+			});
 
-				const query = this.loadRelated(objs, relationName);
-				const results = await query;
-				return results.map(result => result[relationName]);
-			}, {cache});
-		}
+			const query = this.loadRelated(objs, relationName, undefined, knex);
+			const results = await query;
+			return results.map(result => result[relationName]);
+		}, {cache});
 
 		return ctx[loaderName];
 	}
@@ -826,7 +825,7 @@ class BaseModel extends Model {
 
 		// Only pass single column relations through data loader
 		if (relatedCols.length !== 1 || ownerCols.length !== 1) {
-			await self.$loadRelated(relationName);
+			await self.$loadRelated(relationName, undefined, options.knex);
 			return handleResult(self[relationName], options);
 		}
 
@@ -835,7 +834,7 @@ class BaseModel extends Model {
 			relation instanceof Model.HasOneRelation
 		) {
 			self[relationName] = await relation.relatedModelClass
-				.loadByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx});
+				.loadByColumn(relatedCols[0], self[ownerCols[0]], options);
 
 			return handleResult(self[relationName], options);
 		}
@@ -843,13 +842,17 @@ class BaseModel extends Model {
 			const modify = relation.modify;
 			if (String(modify).indexOf('noop') !== -1) {
 				self[relationName] = await relation.relatedModelClass
-					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx});
+					.loadManyByColumn(relatedCols[0], self[ownerCols[0]], options);
 
 				return handleResult(self[relationName], options);
 			}
 
 			self[relationName] = await relation.relatedModelClass
-				.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {ctx: options.ctx, modify});
+				.loadManyByColumn(relatedCols[0], self[ownerCols[0]], {
+					modify,
+					ctx: options.ctx,
+					knex: options.knex,
+				});
 
 			return handleResult(self[relationName], options);
 		}
@@ -860,14 +863,17 @@ class BaseModel extends Model {
 			return handleResult(
 				await this.constructor.getRelationLoader(
 					relationName,
-					options.ctx,
-					{ownerCol: ownerCols[0]},
+					{
+						ownerCol: ownerCols[0],
+						ctx: options.ctx,
+						knex: options.knex,
+					},
 				).load(self[this.constructor.idColumn]),
 				args
 			);
 		}
 
-		await self.$loadRelated(relationName);
+		await self.$loadRelated(relationName, undefined, options.knex);
 		return handleResult(self[relationName], args);
 	}
 
