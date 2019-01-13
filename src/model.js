@@ -491,7 +491,10 @@ class BaseModel extends Model {
 		if (!columnValue || columnValue === '0') return null;
 
 		let manyLoader = false;
+		let isComposite = false;
+
 		if (Array.isArray(columnName)) {
+			isComposite = true;
 			// many loader in case of composite columns, eg. [a, b] in [[1,2], [3,4]]
 			if (Array.isArray(columnValue[0])) {
 				manyLoader = true;
@@ -527,6 +530,9 @@ class BaseModel extends Model {
 			if (options.nonNull) results = results.filter(val => val != null);
 			return results;
 		}
+
+		if (!columnValue || columnValue === '0') return null;
+		if (isComposite && !columnValue.length) return [];
 
 		return this.getLoader(columnName, options.ctx).load(columnValue);
 	}
