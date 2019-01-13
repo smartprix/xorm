@@ -1,3 +1,10 @@
+<a href="https://www.npmjs.com/package/xorm"><img src="https://img.shields.io/npm/v/xorm.svg" alt="Version"></a>
+<a href="https://www.npmjs.com/package/xorm"><img src="https://img.shields.io/npm/dm/xorm.svg" alt="Downloads"></a>
+<a href="https://www.npmjs.com/package/xorm"><img src="https://img.shields.io/npm/l/xorm.svg" alt="License"></a>
+<a href="https://david-dm.org/smartprix/xorm"><img src="https://david-dm.org/smartprix/xorm/status.svg" alt="Dependencies"></a>
+<a href="https://david-dm.org/smartprix/xorm?type=dev"><img src="https://david-dm.org/smartprix/xorm/dev-status.svg" alt="Dev Dependencies"></a>
+<a href="https://david-dm.org/smartprix/xorm?type=peer"><img src="https://david-dm.org/smartprix/xorm/peer-status.svg" alt="Peer Dependencies"></a>
+
 ## xorm
 NodeJS ORM based on ObjectionJS with some extra utilities
 

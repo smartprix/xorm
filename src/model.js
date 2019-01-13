@@ -96,9 +96,9 @@ async function handleResult(obj, options) {
 }
 
 async function limitFilter(values, fn, limit, offset = 0, nonNull = false) {
-	if (!limit || offset >= values.length) return [];
+	if (limit === 0 || offset >= values.length) return [];
 
-	if (limit >= values.length) {
+	if (!limit || limit >= values.length) {
 		let results = (await fn(values)) || [];
 		if (nonNull) results = results.filter(val => val != null);
 		return results;
@@ -600,13 +600,19 @@ class BaseModel extends Model {
 		if (Array.isArray(id)) {
 			if (!id.length) return [];
 
-			return Promise.map(id, idx => (
-				this.idRedisCache.getOrSet(
-					String(idx),
-					() => singleItem(idx),
-					{ttl, parse},
-				)
-			));
+			return limitFilter(
+				id,
+				ids => Promise.map(ids, idx => (
+					this.idRedisCache.getOrSet(
+						String(idx),
+						() => singleItem(idx),
+						{ttl, parse},
+					)
+				)),
+				options.limit,
+				options.offset || 0,
+				options.nonNull,
+			);
 		}
 
 		if (!id || id === '0') return null;
@@ -793,7 +799,7 @@ class BaseModel extends Model {
 
 			return handleResult(self[relationName], options);
 		}
-		else if (relation instanceof Model.HasManyRelation) {
+		if (relation instanceof Model.HasManyRelation) {
 			const modify = relation.modify;
 			if (String(modify).indexOf('noop') !== -1) {
 				self[relationName] = await relation.relatedModelClass
@@ -807,7 +813,7 @@ class BaseModel extends Model {
 
 			return handleResult(self[relationName], options);
 		}
-		else if (
+		if (
 			relation instanceof Model.ManyToManyRelation ||
 			relation instanceof Model.HasOneThroughRelation
 		) {
