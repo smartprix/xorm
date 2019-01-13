@@ -200,11 +200,11 @@ User.getManyLoader('country').load('IN');
 User.getManyLoader('country').loadMany(['IN', 'US']);
 ```
 
-#### `loadById(id, options = {})`
-Short for `getIdLoader(options.ctx).load(id)`
+#### `loadById(id, options = {limit, offset, nonNull, ctx, knex})`
+Short for `getIdLoader(options).load(id)`
 
-#### `loadByColumn(columnName, columnValue, options = {})`
-Short for `getLoader(columnName, options.ctx).load(columnValue)`
+#### `loadByColumn(columnName, columnValue, options = {limit, offset, nonNull, ctx, knex})`
+Short for `getLoader(columnName, options).load(columnValue)`
 
 #### NOTE
 Both `loadById` and `loadByColumn` can accept options which can an object of
@@ -218,10 +218,10 @@ Both `loadById` and `loadByColumn` can accept options which can an object of
 }
 ```
 
-#### `loadManyByColumn(columnName, columnValue, options = {ctx})`
+#### `loadManyByColumn(columnName, columnValue, options = {ctx, knex, modify})`
 Short for `getManyLoader(columnName, options).load(columnValue)`
 
-#### `loadByRelation(relationName, options = {ctx, args})`
+#### `loadByRelation(relationName, options = {ctx, knex, args})`
 You can use this to get a related model. This will automatically take care of batching. `args` can be used to pass arguments to `beforeResolve` and `afterResolve`
 
 ```js
