@@ -6,7 +6,6 @@ export {
 	ValidationError,
 	Validator,
 	AjvValidator,
-	Promise,
 	transaction,
 	compose,
 	mixin,
