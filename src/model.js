@@ -336,15 +336,56 @@ class BaseModel extends Model {
 		return globalLoaderContext[loaderKey];
 	}
 
+	static _getLoaderCtx(options) {
+		const ctx = options.ctx;
+		const knex = options.knex;
+
+		let loaderCtx;
+		if (!ctx) {
+			if (knex) {
+				// we can't use global loader
+				// we need to incorporate knex
+				if (!knex._xorm_ctx) {
+					knex._xorm_ctx = {};
+				}
+
+				loaderCtx = knex._xorm_ctx;
+			}
+			else {
+				// we can use global ctx
+				loaderCtx = globalLoaderContext;
+			}
+		}
+		else if (knex) {
+			if (!ctx._xorm_ctx) {
+				ctx._xorm_ctx = new WeakMap();
+			}
+
+			loaderCtx = ctx._xorm_ctx.get(knex);
+			if (!loaderCtx) {
+				loaderCtx = {};
+				ctx._xorm_ctx.set(knex, loaderCtx);
+			}
+		}
+		else {
+			loaderCtx = ctx;
+		}
+
+		return loaderCtx;
+	}
+
 	/**
 	 * get the loader for a specific column name
 	 * @param {string|Array<string>} columnName
-	 * @param {object|null} [ctx=null]
+	 * @param {object} options
+	 * @param {object|null} options.ctx context for the dataloader [optional]
+	 * @param {object|null} options.knex knex instance for this dataloader [optional]
 	 * @returns {DataLoader}
 	 */
-	static getLoader(columnName, ctx = null) {
-		let loaderName;
+	static getLoader(columnName, options = {}) {
+		const knex = options.knex;
 
+		let loaderName;
 		if (Array.isArray(columnName)) {
 			if (columnName.length === 1) {
 				columnName = columnName[0];
@@ -353,60 +394,54 @@ class BaseModel extends Model {
 				loaderName = `${this.tableName}${columnName.join('-')}DataLoader`;
 			}
 		}
-
 		if (!loaderName) {
 			loaderName = `${this.tableName}${columnName}DataLoader`;
 		}
 
-		let cache = true;
-		if (!ctx) {
-			ctx = globalLoaderContext;
-			cache = false;
-		}
+		const cache = !!options.ctx;
+		const ctx = this._getLoaderCtx(options);
 
-		if (!ctx[loaderName]) {
-			ctx[loaderName] = new DataLoader(async (keys) => {
-				let uniqFunc;
+		if (ctx[loaderName]) return ctx[loaderName];
+
+		ctx[loaderName] = new DataLoader(async (keys) => {
+			let uniqFunc;
+			if (Array.isArray(columnName)) {
+				uniqFunc = item => item.join('-');
+			}
+
+			// this is for avoiding un-necessary queries where the value is 0 or null
+			const filteredKeys = _.uniqBy(keys.filter(key => (key && key !== '0')), uniqFunc);
+
+			let results = [];
+			if (filteredKeys.length) {
 				if (Array.isArray(columnName)) {
-					uniqFunc = item => item.join('-');
+					results = await this.query(knex).whereInComposite(columnName, filteredKeys);
 				}
-
-				// this is for avoiding un-necessary queries where the value is 0 or null
-				const filteredKeys = _.uniqBy(keys.filter(key => (key && key !== '0')), uniqFunc);
-
-				let results = [];
-				if (filteredKeys.length) {
-					if (Array.isArray(columnName)) {
-						results = await this.query().whereInComposite(columnName, filteredKeys);
-					}
-					else {
-						results = await this.query().whereIn(columnName, filteredKeys);
-					}
+				else {
+					results = await this.query(knex).whereIn(columnName, filteredKeys);
 				}
-				return mapResults(results, keys, columnName);
-			}, {cache});
-		}
+			}
+			return mapResults(results, keys, columnName);
+		}, {cache});
 
 		return ctx[loaderName];
 	}
 
 	/**
-	 *
+	 * get loader for one to many columns
 	 * @param {string} columnName
 	 * @param {object} options
 	 * @param {any} options.modify
-	 * @param {object} options.ctx
+	 * @param {object|null} options.ctx
+	 * @param {object|null} options.knex
 	 * @returns {DataLoader}
 	 */
 	static getManyLoader(columnName, options = {}) {
-		let loaderName = `${this.tableName}${columnName}DataLoader`;
-		let cache = true;
-		let ctx = options.ctx;
-		if (!ctx) {
-			ctx = globalLoaderContext;
-			cache = false;
-		}
+		const knex = options.knex;
+		const cache = !!options.ctx;
+		const ctx = this._getLoaderCtx(options);
 
+		let loaderName = `${this.tableName}${columnName}DataLoader`;
 		if (options.modify) {
 			if (_.isPlainObject(options.modify)) {
 				loaderName += JSON.stringify(options.modify);
@@ -422,7 +457,7 @@ class BaseModel extends Model {
 				const filteredKeys = _.uniq(keys.filter(key => (key && key !== '0')));
 				let results = [];
 				if (filteredKeys.length) {
-					const query = this.query().whereIn(columnName, filteredKeys);
+					const query = this.query(knex).whereIn(columnName, filteredKeys);
 					if (options.modify) {
 						if (_.isPlainObject(options.modify)) {
 							query.where(options.modify);
@@ -472,8 +507,8 @@ class BaseModel extends Model {
 		return ctx[loaderName];
 	}
 
-	static getIdLoader(ctx = null) {
-		return this.getLoader(this.idColumn, ctx);
+	static getIdLoader(options = {}) {
+		return this.getLoader(this.idColumn, options);
 	}
 
 	/**
@@ -481,10 +516,11 @@ class BaseModel extends Model {
 	 * @param {string|array} columnName can be a string or an array of strings for composite loading
 	 * @param {any} columnValue can be single or an array
 	 * @param {object} options object of {
-	 * 	ctx: context for the dataloader [optional / default null]
-	 * 	nonNull: only return nonNull results [default false]
-	 * 	limit: only return this many results [default null => return as many results as possible]
-	 * 	offset: in conjunction with limit [default 0]
+	 *   ctx: context for the dataloader [optional / default null]
+	 *   nonNull: only return nonNull results [default false]
+	 *   limit: only return this many results [default null => return as many results as possible]
+	 *   offset: in conjunction with limit [default 0]
+	 *   knex: use this particular knex instance
 	 * }
 	 */
 	static async _loadByColumn(columnName, columnValue, options = {}) {
@@ -516,7 +552,7 @@ class BaseModel extends Model {
 			}
 
 			if (options.limit) {
-				const loader = this.getLoader(columnName, options.ctx);
+				const loader = this.getLoader(columnName, options);
 				return limitFilter(
 					columnValue,
 					values => loader.loadMany(values),
@@ -526,7 +562,7 @@ class BaseModel extends Model {
 				);
 			}
 
-			let results = await this.getLoader(columnName, options.ctx).loadMany(columnValue);
+			let results = await this.getLoader(columnName, options).loadMany(columnValue);
 			if (options.nonNull) results = results.filter(val => val != null);
 			return results;
 		}
@@ -534,7 +570,7 @@ class BaseModel extends Model {
 		if (!columnValue || columnValue === '0') return null;
 		if (isComposite && !columnValue.length) return [];
 
-		return this.getLoader(columnName, options.ctx).load(columnValue);
+		return this.getLoader(columnName, options).load(columnValue);
 	}
 
 	/**
@@ -542,10 +578,11 @@ class BaseModel extends Model {
 	 * @param {string|array} columnName can be a string or an array of strings for composite loading
 	 * @param {any} columnValue can be single or an array
 	 * @param {object} options object of {
-	 * 	ctx: context for the dataloader [optional / default null]
-	 * 	nonNull: only return nonNull results [default false]
-	 * 	limit: only return this many results [default null => return as many results as possible]
-	 * 	offset: in conjunction with limit [default 0]
+	 *   ctx: context for the dataloader [optional / default null]
+	 *   nonNull: only return nonNull results [default false]
+	 *   limit: only return this many results [default null => return as many results as possible]
+	 *   offset: in conjunction with limit [default 0]
+	 *   knex: use this particular knex instance
 	 * }
 	 */
 	static loadByColumn(columnName, columnValue, options = {}) {
@@ -569,10 +606,11 @@ class BaseModel extends Model {
 	 * load result by id, using dataloader
 	 * @param {any} id can be single or an array
 	 * @param {object} options object of {
-	 * 	ctx: context for the dataloader [optional / default null]
-	 * 	nonNull: only return nonNull results [default false]
-	 * 	limit: only return this many results [default null => return as many results as possible]
-	 * 	offset: in conjunction with limit [default 0]
+	 *   ctx: context for the dataloader [optional / default null]
+	 *   nonNull: only return nonNull results [default false]
+	 *   limit: only return this many results [default null => return as many results as possible]
+	 *   offset: in conjunction with limit [default 0]
+	 *   knex: use this particular knex instance
 	 * }
 	 */
 	static loadById(id, options = {}) {
@@ -623,6 +661,16 @@ class BaseModel extends Model {
 		);
 	}
 
+	/**
+	 * load many results for a single value
+	 * @param {string} columnName
+	 * @param {any} columnValue
+	 * @param {object} options
+	 * @param {any} options.modify
+	 * @param {object|null} options.ctx
+	 * @param {object|null} options.knex
+	 * @returns {Array}
+	 */
 	static loadManyByColumn(columnName, columnValue, options = {}) {
 		if (!columnValue || columnValue === '0') return null;
 
