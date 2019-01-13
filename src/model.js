@@ -95,7 +95,8 @@ async function handleResult(obj, options) {
 	return obj;
 }
 
-async function limitFilter(values, fn, limit, offset = 0, nonNull = false) {
+async function limitFilter(values, fn, options = {}) {
+	const {limit, offset = 0, nonNull = false} = options;
 	if (limit === 0 || offset >= values.length) return [];
 
 	if (!limit || limit >= values.length) {
@@ -108,7 +109,12 @@ async function limitFilter(values, fn, limit, offset = 0, nonNull = false) {
 	if (nonNull) results = results.filter(val => val != null);
 	if (results.length >= limit) return results;
 
-	const extraResults = await limitFilter(values, fn, limit - results.length, offset + limit);
+	const extraResults = await limitFilter(values, fn, {
+		limit: limit - results.length,
+		offset: offset + limit,
+		nonNull,
+	});
+
 	return results.concat(extraResults);
 }
 
@@ -525,12 +531,11 @@ class BaseModel extends Model {
 	 */
 	static async _loadByColumn(columnName, columnValue, options = {}) {
 		if (!columnValue || columnValue === '0') return null;
+		if (Array.isArray(columnValue) && !columnValue.length) return [];
 
 		let manyLoader = false;
-		let isComposite = false;
 
 		if (Array.isArray(columnName)) {
-			isComposite = true;
 			// many loader in case of composite columns, eg. [a, b] in [[1,2], [3,4]]
 			if (Array.isArray(columnValue[0])) {
 				manyLoader = true;
@@ -541,36 +546,25 @@ class BaseModel extends Model {
 			manyLoader = true;
 		}
 
-		if (manyLoader) {
-			if (options.nonNull) {
-				columnValue = columnValue.filter(val => (val && val !== '0'));
-			}
-			else {
-				// change falsy values to false
-				// otherwise dataloader creates problems (does not accept null)
-				columnValue = columnValue.map(val => val || false);
-			}
-
-			if (options.limit) {
-				const loader = this.getLoader(columnName, options);
-				return limitFilter(
-					columnValue,
-					values => loader.loadMany(values),
-					options.limit,
-					options.offset || 0,
-					options.nonNull,
-				);
-			}
-
-			let results = await this.getLoader(columnName, options).loadMany(columnValue);
-			if (options.nonNull) results = results.filter(val => val != null);
-			return results;
+		if (!manyLoader) {
+			return this.getLoader(columnName, options).load(columnValue);
 		}
 
-		if (!columnValue || columnValue === '0') return null;
-		if (isComposite && !columnValue.length) return [];
+		if (options.nonNull) {
+			columnValue = columnValue.filter(val => (val && val !== '0'));
+		}
+		else {
+			// change falsy values to false
+			// otherwise dataloader creates problems (does not accept null)
+			columnValue = columnValue.map(val => val || false);
+		}
 
-		return this.getLoader(columnName, options).load(columnValue);
+		const loader = this.getLoader(columnName, options);
+		return limitFilter(
+			columnValue,
+			values => loader.loadMany(values),
+			options,
+		);
 	}
 
 	/**
@@ -614,7 +608,7 @@ class BaseModel extends Model {
 	 * }
 	 */
 	static loadById(id, options = {}) {
-		if (!this.cacheById) {
+		if (!this.cacheById || options.knex) {
 			return this._loadByColumn(this.idColumn, id, options);
 		}
 
@@ -647,9 +641,7 @@ class BaseModel extends Model {
 						{ttl, parse},
 					)
 				)),
-				options.limit,
-				options.offset || 0,
-				options.nonNull,
+				options,
 			);
 		}
 
