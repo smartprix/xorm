@@ -22,6 +22,7 @@ import {
 	snakeCaseMappers as snakeCaseMappersType,
 	knexSnakeCaseMappers as knexSnakeCaseMappersType,
 } from 'objection';
+import * as Knex from 'knex';
 import { RedisCache, Cache } from 'sm-utils';
 import * as DataLoader from 'dataloader';
 
@@ -60,14 +61,14 @@ declare module 'xorm' {
 		 * @param column values of which column 
 		 * @param values values of the columns
 		 */
-		orderByArrayPos(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
-		orderByArrayPosition(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
+		orderByArrayPos(column: string, values: any[]): QueryBuilder<QM, RM, RV>;
+		orderByArrayPosition(column: string, values: any[]): QueryBuilder<QM, RM, RV>;
 		/**
 		 * this is equivalent to `this.where(column, values).orderByArrayPos(column, values)`
 		 * use this for returning results ordered in the way you gave them
 		 */
-		whereInOrdered(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
-		andWhereInOrdered(column: string, values: Array<any>): QueryBuilder<QM, RM, RV>;
+		whereInOrdered(column: string, values: any[]): QueryBuilder<QM, RM, RV>;
+		andWhereInOrdered(column: string, values: any[]): QueryBuilder<QM, RM, RV>;
 		withoutScope(withoutScope?: boolean): QueryBuilder<QM, RM, RV>;
 		/*
 		 * Wraps the where condition till now into braces
@@ -85,7 +86,7 @@ declare module 'xorm' {
 		dontTouch(): QueryBuilder<QM, RM, RV>;
 	}
 
-	interface loaderOpts {
+	interface makeLoaderOpts {
 		/**
 		 * ignore the results returned by the loader function
 	     * [default false]
@@ -108,6 +109,58 @@ declare module 'xorm' {
 		filterKeys?: boolean | ((keys: any) => boolean);
 	}
 
+	interface loaderOptions {
+		/** context for the dataloader [optional / default null] **/
+		ctx?: {[key: string]: any};
+		/** use this particular knex instance **/
+		knex?: Knex;
+	}
+
+	interface loadByOptions extends loaderOptions {
+		/** only return nonNull results [default false] **/
+		nonNull?: boolean;
+		/** only return this many results [default null => return as many results as possible] **/
+		limit?: number;
+		/** in conjunction with limit [default 0] **/
+		offset?: number;
+	}
+
+	interface loadManyOptions extends loaderOptions{
+		modify?: any;
+	}
+
+	interface relationOptions {
+		/** name of the relationship (by default name of the model in camelCase) **/
+		name?: string;
+		/** join field from (by default ModelTableName.camelCasedModelNameId) **/
+		joinFrom?: string;
+		/** join field to (by default ModelTableName.id) **/
+		joinTo?: string;
+		/** apply this filter to the model **/
+		filter?: string;
+		modify?: any;
+	}
+
+	interface relationThrough {
+		/** if there is a model for the through table **/
+		model?: string;
+		/** tableName of the table to join through **/
+		table?: string;
+		/** join through from **/
+		from?: string;
+		/** join through to **/
+		to?: string;
+		/** filter to apply on the join table **/
+		filter?: string;
+		/** extra fields to select from the through table **/
+		extra?: string;
+	}
+
+	interface resolverOptions extends loaderOptions {
+		args: {[key: string]: any};
+		default: ((args: any) => Promise<any>) | any;
+	}
+
 	class Model extends ObjectionModel {
 		static useLimitInFirst: boolean;
 		/**
@@ -119,10 +172,10 @@ declare module 'xorm' {
 		 *  eg. if you don't want updatedAt => `timestamps = {createdAt: 'createdAt'}`
 		 */
 		static timestamps: boolean;
-		static timestampColumns: Array<string>;
+		static timestampColumns: string[];
 		static softDelete: boolean;
 		static softDeleteColumn: string;
-		static systemColumns: Array<string>;
+		static systemColumns: string[];
 		static tableName: string;
 		
 		static basePath: string;
@@ -130,8 +183,7 @@ declare module 'xorm' {
 		
 		static Error: typeof UserError;
 		static createValidator(): AjvValidatorType;
-		
-		
+
 		/**
 		 * this can be false or an object of {
 		 * 		ttl (in ms or timestring),
@@ -154,27 +206,28 @@ declare module 'xorm' {
 		static cache: Cache;
 		$cache: Cache;
 		
-		static dataLoaders: object;
+		static dataLoaders: {[key: string]: DataLoader<any, any>};
 		static setGlobalLoaderContext(ctx: object): void;
-		static makeLoader(loaderName: string, loaderFunc: (keys: Array<any>) => Promise<Array<any>>, options: loaderOpts): DataLoader<any, any>;
-		static getLoader(columnName: string|Array<string>, ctx?: object): DataLoader<any, any>;
-		static getManyLoader(columnName: string, options?: object): DataLoader<any, any>;
-		static getRelationLoader(relationName:string, ctx?: object, options?: object): DataLoader<any, any>;
-		static getIdLoader(ctx?: object): DataLoader<any, any>;
+		static makeLoader(loaderName: string, loaderFunc: (keys: any[]) => Promise<any[]>, options: makeLoaderOpts): DataLoader<any, any>;
+		static getLoader(columnName: string|string[], options?: loaderOptions): DataLoader<any, any>;
+		static getManyLoader(columnName: string, options?: loadManyOptions): DataLoader<any, any>;
+		static getRelationLoader(relationName:string, options?: loaderOptions & {ownerCol?: string}): DataLoader<any, any>;
+		static getIdLoader(options?: loaderOptions): DataLoader<any, any>;
 		
-		static loadByColumn<QM extends Model>(columnName: string|Array<string>, columnValue: any, options?: object): Promise<QM|null>;
-		static loadByColumn<QM extends Model>(columnName: string|Array<string>, columnValue: Array<any>, options?: object): Promise<Array<QM|null>>;
 		static fromJsonSimple<QM extends Model>(json: object): QM;
-		static loadById<QM extends Model>(this: Constructor<QM>, id: any, options?: object): Promise<QM|null>;
-		static loadById<QM extends Model>(this: Constructor<QM>, id: Array<any>, options?: object): Promise<Array<QM|null>>;
-		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any, options?: object): Promise<QM|null>;
-		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: Array<any>, options?: object): Promise<Array<QM|null>>;
+		static loadByColumn<QM extends Model>(columnName: string|string[], columnValue: any, options?: loadByOptions): Promise<QM|null>;
+		static loadByColumn<QM extends Model>(columnName: string|string[], columnValue: any[], options?: loadByOptions): Promise<Array<QM|null>>;
+		static loadById<QM extends Model>(this: Constructor<QM>, id: any, options?: loadByOptions): Promise<QM|null>;
+		static loadById<QM extends Model>(this: Constructor<QM>, id: any[], options?: loadByOptions): Promise<Array<QM|null>>;
+
+		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any, options?: loadManyOptions): Promise<QM|null>;
+		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any[], options?: loadManyOptions): Promise<Array<QM|null>>;
 		
 		static $relations(): void;
-		static belongsTo(model: string|typeof Model, options?: object): void;
-		static hasOne(model: string|typeof Model, options?: object): void;
-		static hasMany(model: string|typeof Model, options?: object): void;
-		static hasManyThrough(model: string|typeof Model, options?: object): void;
+		static belongsTo(model: string|typeof Model, options?: relationOptions): void;
+		static hasOne(model: string|typeof Model, options?: relationOptions): void;
+		static hasMany(model: string|typeof Model, options?: relationOptions): void;
+		static hasManyThrough(model: string|typeof Model, options?: relationOptions & {through?: relationThrough}): void;
 		
 		static QueryBuilder: typeof QueryBuilder;
 		static where<QM extends Model>(
@@ -187,12 +240,23 @@ declare module 'xorm' {
 		): QueryBuilder<QM>;
 
 		static RelatedQueryBuilder: typeof QueryBuilder;
-		loadByRelation(relationName: string, options?: object): Promise<Model>;
 
-		static getFindOneResolver<QM extends Model>(options?: object): (root: object, args: object) => QueryBuilderYieldingOneOrNone<QM>;
-		static getRelationResolver(relationName:string, options?: object): (root: object, args: object) => Promise<Model|null|Array<Model|null>>;
-		static getFindByIdSubResolver<QM extends Model>(propName: string, options?: object): (obj: any) => Promise<QM|null>;
-		static getDeleteByIdResolver(): (root: object, obj: object) => Promise<{id: any}>;
+		/**
+		 * beforeResolve can be used to return a modified item to use for resolving
+		 * called before resolving (using graphql) a particular item
+		 */
+		beforeResolve(options: resolverOptions): Promise<Model>;
+		/**
+		 * afterResolve can be used to modify the item we got from the resolver
+		 * called after resolving (using graphql) a particular item
+		 */
+		afterResolve(options: resolverOptions & {isDefault?: true}): Promise<Model>;
+		loadByRelation(relationName: string, options?: resolverOptions): Promise<Model>;
+
+		static getRelationResolver(relationName:string, options?: resolverOptions): (root: object, args: object) => Promise<Model|null|Array<Model|null>>;
+		static getFindOneResolver<QM extends Model>(options?: loadByOptions): (root: object, args: object) => QueryBuilderYieldingOneOrNone<QM>;
+		static getFindByIdSubResolver<QM extends Model>(propName: string, options?: loadByOptions): (root: any) => Promise<QM|null>;
+		static getDeleteByIdResolver(): (root: object, args: object) => Promise<{id: any}>;
 
 		$parseJson(json: Pojo, opt?: ModelOptions): Pojo;
 		static getJsonSchema(): JsonSchema;

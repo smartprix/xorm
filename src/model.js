@@ -760,14 +760,14 @@ class BaseModel extends Model {
 	static getFindOneResolver(options = {}) {
 		return (async (root, args) => {
 			if (args[this.idColumn]) {
-				return this.loadById(args[this.idColumn], {ctx: options.ctx});
+				return this.loadById(args[this.idColumn], options);
 			}
 
 			const keys = Object.keys(args);
 			if (!keys.length) return null;
 
 			if (keys.length === 1) {
-				return this.loadByColumn(keys[0], args[keys[0]], {ctx: options.ctx});
+				return this.loadByColumn(keys[0], args[keys[0]], options);
 			}
 
 			const query = this.query();
@@ -895,7 +895,7 @@ class BaseModel extends Model {
 
 	static getFindByIdSubResolver(propName, options = {}) {
 		if (!propName) propName = `${_.camelCase(this.name)}Id`;
-		return (async obj => this.loadById(obj[propName], {ctx: options.ctx}));
+		return (async obj => this.loadById(obj[propName], options));
 	}
 
 	static getDeleteByIdResolver() {

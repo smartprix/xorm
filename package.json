@@ -29,6 +29,7 @@
     "@babel/plugin-proposal-class-properties": "^7.2.3",
     "@babel/preset-env": "^7.2.3",
     "@babel/register": "^7.0.0",
+    "@types/knex": "^0.15.1",
     "chai": "4.2.0",
     "eslint": "5.11.1",
     "eslint-config-smartprix": "3.5.4",
