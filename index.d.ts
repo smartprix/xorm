@@ -21,6 +21,7 @@ import {
 	QueryBuilderYieldingOneOrNone,
 	snakeCaseMappers as snakeCaseMappersType,
 	knexSnakeCaseMappers as knexSnakeCaseMappersType,
+	Transaction,
 } from 'objection';
 import * as Knex from 'knex';
 import { RedisCache, Cache } from 'sm-utils';
@@ -50,7 +51,7 @@ declare module 'xorm' {
 		loaderCtx(ctx: object|null): void;
 		find(...args: any[]): QueryBuilderYieldingOneOrNone<QM>;
 		save(fields: Partial<QM>): QueryBuilderYieldingCount<QM, RM>;
-		saveAndFetch<QM extends Model>(fields: object): QueryBuilderYieldingOne<QM>;
+		saveAndFetch(fields: Partial<QM>): QueryBuilderYieldingOne<QM>;
 		updateById(id: any, fields: PartialUpdate<QM>): QueryBuilderYieldingCount<QM, RM>;
 		patchById(id: any, fields: PartialUpdate<QM>): QueryBuilderYieldingCount<QM, RM>;
 		whereByOr(obj: Partial<QM>): QueryBuilder<QM, RM, RV>;
@@ -237,6 +238,10 @@ declare module 'xorm' {
 		static find<QM extends Model>(
 			this: Constructor<QM>,
 			...args: any[],
+		): QueryBuilder<QM>;
+		static query<QM extends ObjectionModel>(
+			this: Constructor<QM>,
+			trxOrKnex?: Transaction | Knex,
 		): QueryBuilder<QM>;
 
 		static RelatedQueryBuilder: typeof QueryBuilder;
