@@ -172,7 +172,7 @@ declare module 'xorm' {
 		 * if you omit one column in the object, that column won't be touched at all
 		 *  eg. if you don't want updatedAt => `timestamps = {createdAt: 'createdAt'}`
 		 */
-		static timestamps: boolean;
+		static timestamps: boolean | {createdAt?: string, updatedAt?: string};
 		static timestampColumns: string[];
 		static softDelete: boolean;
 		static softDeleteColumn: string;
