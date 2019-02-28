@@ -21,6 +21,7 @@ import {
 	QueryBuilderYieldingOneOrNone,
 	snakeCaseMappers as snakeCaseMappersType,
 	knexSnakeCaseMappers as knexSnakeCaseMappersType,
+	Transaction,
 } from 'objection';
 import * as Knex from 'knex';
 import { RedisCache, Cache } from 'sm-utils';
@@ -50,7 +51,7 @@ declare module 'xorm' {
 		loaderCtx(ctx: object|null): void;
 		find(...args: any[]): QueryBuilderYieldingOneOrNone<QM>;
 		save(fields: Partial<QM>): QueryBuilderYieldingCount<QM, RM>;
-		saveAndFetch<QM extends Model>(fields: object): QueryBuilderYieldingOne<QM>;
+		saveAndFetch(fields: Partial<QM>): QueryBuilderYieldingOne<QM>;
 		updateById(id: any, fields: PartialUpdate<QM>): QueryBuilderYieldingCount<QM, RM>;
 		patchById(id: any, fields: PartialUpdate<QM>): QueryBuilderYieldingCount<QM, RM>;
 		whereByOr(obj: Partial<QM>): QueryBuilder<QM, RM, RV>;
@@ -171,7 +172,7 @@ declare module 'xorm' {
 		 * if you omit one column in the object, that column won't be touched at all
 		 *  eg. if you don't want updatedAt => `timestamps = {createdAt: 'createdAt'}`
 		 */
-		static timestamps: boolean;
+		static timestamps: boolean | {createdAt?: string, updatedAt?: string};
 		static timestampColumns: string[];
 		static softDelete: boolean;
 		static softDeleteColumn: string;
@@ -193,7 +194,7 @@ declare module 'xorm' {
 		 * }
 		 * if this is an object, all items accessed with loadById are cached for ttl duration
 		 */
-		static cacheById: boolean;
+		static cacheById: boolean | {ttl: number | string, columns: string[], excludedColumns: string[], maxLocalItems: number};
 		/**
 		 * @param prefix default value: 'a'
 		 */
@@ -215,10 +216,17 @@ declare module 'xorm' {
 		static getIdLoader(options?: loaderOptions): DataLoader<any, any>;
 		
 		static fromJsonSimple<QM extends Model>(json: object): QM;
-		static loadByColumn<QM extends Model>(columnName: string|string[], columnValue: any, options?: loadByOptions): Promise<QM|null>;
-		static loadByColumn<QM extends Model>(columnName: string|string[], columnValue: any[], options?: loadByOptions): Promise<Array<QM|null>>;
+		static loadByColumn<QM extends Model>(columnName: string, columnValue: any, options?: loadByOptions): Promise<QM|null>;
+		static loadByColumn<QM extends Model>(columnName: string, columnValue: any[], options?: loadByOptions): Promise<(QM|null)[]>;
+		static loadByColumn<QM extends Model>(columnName: string, columnValue: any[], options?: loadByOptions & {nonNull: true}): Promise<QM[]>;
+
+		static loadByColumn<QM extends Model>(columnName: string[], columnValue: any[], options?: loadByOptions): Promise<QM|null>;
+		static loadByColumn<QM extends Model>(columnName: string[], columnValue: any[][], options?: loadByOptions): Promise<(QM|null)[]>;
+		static loadByColumn<QM extends Model>(columnName: string[], columnValue: any[][], options?: loadByOptions & {nonNull: true}): Promise<QM[]>;
+
 		static loadById<QM extends Model>(this: Constructor<QM>, id: any, options?: loadByOptions): Promise<QM|null>;
 		static loadById<QM extends Model>(this: Constructor<QM>, id: any[], options?: loadByOptions): Promise<Array<QM|null>>;
+		static loadById<QM extends Model>(this: Constructor<QM>, id: any[], options?: loadByOptions & {nonNull: true}): Promise<Array<QM>>;
 
 		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any, options?: loadManyOptions): Promise<QM|null>;
 		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any[], options?: loadManyOptions): Promise<Array<QM|null>>;
@@ -237,6 +245,10 @@ declare module 'xorm' {
 		static find<QM extends Model>(
 			this: Constructor<QM>,
 			...args: any[],
+		): QueryBuilder<QM>;
+		static query<QM extends ObjectionModel>(
+			this: Constructor<QM>,
+			trxOrKnex?: Transaction | Knex,
 		): QueryBuilder<QM>;
 
 		static RelatedQueryBuilder: typeof QueryBuilder;
