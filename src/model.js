@@ -95,6 +95,14 @@ async function handleResult(obj, options) {
 	return obj;
 }
 
+/**
+ * @template T
+ * @template X
+ * @param {T[]} values
+ * @param {(vals: T[]) => Promise<X[]>} fn
+ * @param {{limit?: number, offset?: number, nonNull?: boolean}} [options]
+ * @returns {Promise<X[]>}
+ */
 async function limitFilter(values, fn, options = {}) {
 	const {limit, offset = 0, nonNull = false} = options;
 	if (limit === 0 || offset >= values.length) return [];
@@ -1157,3 +1165,7 @@ BaseModel.QueryBuilder = BaseQueryBuilder;
 BaseModel.RelatedQueryBuilder = BaseQueryBuilder;
 
 export default BaseModel;
+
+export {
+	limitFilter,
+};
