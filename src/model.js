@@ -99,12 +99,15 @@ async function handleResult(obj, options) {
  * @template T
  * @template X
  * @param {T[]} values
- * @param {(vals: T[]) => Promise<X[]>} fn
- * @param {{limit?: number, offset?: number, nonNull?: boolean}} [options]
+ * @param {Object} [options]
+ * @param {(vals: T[]) => Promise<X[]>} [options.fn]
+ * @param {number} [options.limit]
+ * @param {number} [options.offset] default is 0
+ * @param {boolean} [options.nonNull] default is false
  * @returns {Promise<X[]>}
  */
-async function limitFilter(values, fn, options = {}) {
-	const {limit, offset = 0, nonNull = false} = options;
+async function limitFilter(values, options = {}) {
+	const {limit, offset = 0, nonNull = false, fn = v => v} = options;
 	if (limit === 0 || offset >= values.length) return [];
 
 	if (!limit || limit >= values.length) {
@@ -117,7 +120,8 @@ async function limitFilter(values, fn, options = {}) {
 	if (nonNull) results = results.filter(val => val != null);
 	if (results.length >= limit) return results;
 
-	const extraResults = await limitFilter(values, fn, {
+	const extraResults = await limitFilter(values, {
+		fn,
 		limit: limit - results.length,
 		offset: offset + limit,
 		nonNull,
@@ -569,8 +573,10 @@ class BaseModel extends Model {
 		const loader = this.getLoader(columnName, options);
 		return limitFilter(
 			columnValue,
-			values => loader.loadMany(values),
-			options,
+			{
+				...options,
+				fn: values => loader.loadMany(values),
+			},
 		);
 	}
 
@@ -641,14 +647,16 @@ class BaseModel extends Model {
 
 			return limitFilter(
 				id,
-				ids => Promise.map(ids, idx => (
-					this.idRedisCache.getOrSet(
-						String(idx),
-						() => singleItem(idx),
-						{ttl, parse},
-					)
-				)),
-				options,
+				{
+					...options,
+					fn: ids => Promise.map(ids, idx => (
+						this.idRedisCache.getOrSet(
+							String(idx),
+							() => singleItem(idx),
+							{ttl, parse},
+						)
+					)),
+				}
 			);
 		}
 
