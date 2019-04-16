@@ -273,4 +273,11 @@ declare module 'xorm' {
 		$parseJson(json: Pojo, opt?: ModelOptions): Pojo;
 		static getJsonSchema(): JsonSchema;
 	}
+
+	function limitFilter<T, X>(values: T[], options: {limit?: number, offset?: number, nonNull: true, fn: (vals: T[]) => Promise<X[]>}): Promise<X[]>
+	function limitFilter<T, X>(values: T[], options: {limit?: number, offset?: number, nonNull?: boolean, fn: (vals: T[]) => Promise<X[]>}): Promise<(X | null)[]>
+	function limitFilter<T, X = T>(values: T[], options?: {limit?: number, offset?: number, nonNull?: boolean}): Promise<X[]>
+	// Non Promise overloads
+	function limitFilter<T, X>(values: T[], options: {limit?: number, offset?: number, nonNull: true, fn: (vals: T[]) => X[]}): Promise<X[]>
+	function limitFilter<T, X>(values: T[], options: {limit?: number, offset?: number, nonNull?: boolean, fn: (vals: T[]) => X[]}): Promise<(X | null)[]>
 }
