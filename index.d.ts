@@ -110,6 +110,9 @@ declare module 'xorm' {
 		filterKeys?: boolean | ((keys: any) => boolean);
 	}
 
+	/**
+	 * limi, offset, nonNull are only applicable if ids/values is an array
+	 */
 	interface loaderOptions {
 		/** context for the dataloader [optional / default null] **/
 		ctx?: {[key: string]: any};
@@ -118,12 +121,20 @@ declare module 'xorm' {
 	}
 
 	interface loadByOptions extends loaderOptions {
-		/** only return nonNull results [default false] **/
-		nonNull?: boolean;
 		/** only return this many results [default null => return as many results as possible] **/
 		limit?: number;
 		/** in conjunction with limit [default 0] **/
 		offset?: number;
+	}
+
+	interface loadByOptionsNull extends loadByOptions {
+		/** only return nonNull results [default false] **/
+		nonNull?: false;
+	}
+
+	interface loadByOptionsNonNull extends loadByOptions {
+		/** only return nonNull results [default false] **/
+		nonNull: true;
 	}
 
 	interface loadManyOptions extends loaderOptions{
@@ -216,20 +227,24 @@ declare module 'xorm' {
 		static getIdLoader(options?: loaderOptions): DataLoader<any, any>;
 		
 		static fromJsonSimple<QM extends Model>(json: object): QM;
-		static loadByColumn<QM extends Model>(columnName: string, columnValue: any, options?: loadByOptions): Promise<QM|null>;
-		static loadByColumn<QM extends Model>(columnName: string, columnValue: any[], options?: loadByOptions): Promise<(QM|null)[]>;
-		static loadByColumn<QM extends Model>(columnName: string, columnValue: any[], options?: loadByOptions & {nonNull: true}): Promise<QM[]>;
 
-		static loadByColumn<QM extends Model>(columnName: string[], columnValue: any[], options?: loadByOptions): Promise<QM|null>;
-		static loadByColumn<QM extends Model>(columnName: string[], columnValue: any[][], options?: loadByOptions): Promise<(QM|null)[]>;
-		static loadByColumn<QM extends Model>(columnName: string[], columnValue: any[][], options?: loadByOptions & {nonNull: true}): Promise<QM[]>;
+		static loadByColumn<QM extends Model, T>(this: Constructor<QM>, columnName: string, columnValue: T[], options?: loadByOptionsNull): Promise<(QM|null)[]>;
+		static loadByColumn<QM extends Model, T>(this: Constructor<QM>, columnName: string, columnValue: T[], options?: loadByOptionsNonNull): Promise<QM[]>;
+		// limit, offset doesn't apply to non array overloads
+		static loadByColumn<QM extends Model, T>(this: Constructor<QM>, columnName: string, columnValue: T, options?: loaderOptions): Promise<QM|null>;
+		// Multiple columns
+		static loadByColumn<QM extends Model, T>(this: Constructor<QM>, columnName: string[], columnValue: T[][], options?: loadByOptionsNull): Promise<(QM|null)[]>;
+		static loadByColumn<QM extends Model, T>(this: Constructor<QM>, columnName: string[], columnValue: T[][], options?: loadByOptionsNonNull): Promise<QM[]>;
+		// limit, offset doesn't apply to non array overloads
+		static loadByColumn<QM extends Model, T>(this: Constructor<QM>, columnName: string[], columnValue: T[], options?: loaderOptions): Promise<QM|null>;
 
-		static loadById<QM extends Model>(this: Constructor<QM>, id: any, options?: loadByOptions): Promise<QM|null>;
-		static loadById<QM extends Model>(this: Constructor<QM>, id: any[], options?: loadByOptions): Promise<Array<QM|null>>;
-		static loadById<QM extends Model>(this: Constructor<QM>, id: any[], options?: loadByOptions & {nonNull: true}): Promise<Array<QM>>;
+		static loadById<QM extends Model, T>(this: Constructor<QM>, id: T[], options?: loadByOptionsNull): Promise<Array<QM|null>>;
+		static loadById<QM extends Model, T>(this: Constructor<QM>, id: T[], options?: loadByOptionsNonNull): Promise<Array<QM>>;
+		// limit, offset doesn't apply to non array overloads
+		static loadById<QM extends Model, T>(this: Constructor<QM>, id: T, options?: loaderOptions): Promise<QM|null>;
 
-		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any, options?: loadManyOptions): Promise<QM|null>;
-		static loadManyByColumn<QM extends Model>(columnName: string, columnValue: any[], options?: loadManyOptions): Promise<Array<QM|null>>;
+		static loadManyByColumn<QM extends Model, T>(columnName: string, columnValue: T[], options?: loadManyOptions): Promise<Array<QM|null>>;
+		static loadManyByColumn<QM extends Model, T>(columnName: string, columnValue: T, options?: loadManyOptions): Promise<QM|null>;
 		
 		static $relations(): void;
 		static belongsTo(model: string|typeof Model, options?: relationOptions): void;
