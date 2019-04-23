@@ -286,6 +286,8 @@ declare module 'xorm' {
 		static getDeleteByIdResolver(): (root: object, args: object) => Promise<{id: any}>;
 
 		$parseJson(json: Pojo, opt?: ModelOptions): Pojo;
+		$query<QM extends ObjectionModel>(this: QM, trxOrKnex?: Transaction | Knex): QueryBuilder<QM, QM>;
+
 		static getJsonSchema(): JsonSchema;
 	}
 
