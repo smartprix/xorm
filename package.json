@@ -67,6 +67,7 @@
   },
   "peerDependencies": {
     "objection": "^1.2.2",
+    "knex": "0.x",
     "sm-utils": "^2.14.5"
   }
 }
