@@ -45,7 +45,7 @@ declare module 'xorm' {
 		model: string;
 		data: any;
 	}
-	
+
 	class QueryBuilder<QM extends ObjectionModel, RM = QM[], RV = RM> extends ObjectionQueryBuilder<QM, RM, RV> {
 		loaderContext(ctx: object|null): void;
 		loaderCtx(ctx: object|null): void;
@@ -59,7 +59,7 @@ declare module 'xorm' {
 		/**
 		 * order the items by position in the array given (of column)
 	 	 * this is mostly useful in whereIn queries where you need ordered results
-		 * @param column values of which column 
+		 * @param column values of which column
 		 * @param values values of the columns
 		 */
 		orderByArrayPos(column: string, values: any[]): QueryBuilder<QM, RM, RV>;
@@ -189,10 +189,10 @@ declare module 'xorm' {
 		static softDeleteColumn: string;
 		static systemColumns: string[];
 		static tableName: string;
-		
+
 		static basePath: string;
 		static setBasePath(basePath: string): void;
-		
+
 		static Error: typeof UserError;
 		static createValidator(): AjvValidatorType;
 
@@ -214,18 +214,18 @@ declare module 'xorm' {
 		static idRedisCache: RedisCache;
 		static redisCache: RedisCache;
 		static deleteCacheById(id: string|number): void;
-		
+
 		static cache: Cache;
 		$cache: Cache;
-		
+
 		static dataLoaders: {[key: string]: DataLoader<any, any>};
 		static setGlobalLoaderContext(ctx: object): void;
-		static makeLoader(loaderName: string, loaderFunc: (keys: any[]) => Promise<any[]>, options: makeLoaderOpts): DataLoader<any, any>;
-		static getLoader(columnName: string|string[], options?: loaderOptions): DataLoader<any, any>;
-		static getManyLoader(columnName: string, options?: loadManyOptions): DataLoader<any, any>;
+		static makeLoader<K, V>(loaderName: string, loaderFunc: (keys: K[]) => Promise<V>, options: makeLoaderOpts): DataLoader<K, V>;
+		static getLoader<K extends (string | string[])>(columnName: K, options?: loaderOptions): DataLoader<K, any>;
+		static getManyLoader(columnName: string, options?: loadManyOptions): DataLoader<string, any>;
 		static getRelationLoader(relationName:string, options?: loaderOptions & {ownerCol?: string}): DataLoader<any, any>;
-		static getIdLoader(options?: loaderOptions): DataLoader<any, any>;
-		
+		static getIdLoader(options?: loaderOptions): DataLoader<string, any>;
+
 		static fromJsonSimple<QM extends Model>(json: object): QM;
 
 		static loadByColumn<QM extends Model, T>(this: Constructor<QM>, columnName: string, columnValue: T[], options?: loadByOptionsNull): Promise<(QM|null)[]>;
@@ -245,13 +245,13 @@ declare module 'xorm' {
 
 		static loadManyByColumn<QM extends Model, T>(columnName: string, columnValue: T[], options?: loadManyOptions): Promise<Array<QM|null>>;
 		static loadManyByColumn<QM extends Model, T>(columnName: string, columnValue: T, options?: loadManyOptions): Promise<QM|null>;
-		
+
 		static $relations(): void;
 		static belongsTo(model: string|typeof Model, options?: relationOptions): void;
 		static hasOne(model: string|typeof Model, options?: relationOptions): void;
 		static hasMany(model: string|typeof Model, options?: relationOptions): void;
 		static hasManyThrough(model: string|typeof Model, options?: relationOptions & {through?: relationThrough}): void;
-		
+
 		static QueryBuilder: typeof QueryBuilder;
 		static where<QM extends Model>(
 			this: Constructor<QM>,
