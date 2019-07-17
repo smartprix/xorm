@@ -180,10 +180,15 @@ class BaseQueryBuilder extends QueryBuilder {
 		const model = this.modelClass();
 		if (!model.softDelete) return;
 
-		const softDeleteColumn = `${model.tableName}.${model.softDeleteColumn}`;
-
 		this.onBuildKnex((knex, builder) => {
-			if (!builder.isFind() || builder.context().withTrashed) return;
+			if (
+				// don't add soft delete condition to partial queries (inside functions)
+				builder._isPartialQuery ||
+				!builder.isFind() ||
+				builder.context().withTrashed
+			) return;
+
+			const softDeleteColumn = `${model.tableName}.${model.softDeleteColumn}`;
 
 			// add the deletedAt statement
 			if (builder.context().onlyTrashed) {
