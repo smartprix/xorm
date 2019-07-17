@@ -21,7 +21,8 @@ QueryCompiler.prototype.where = function () {
 	while (++i < wheres.length) {
 		const stmt = wheres[i];
 		if (stmt.type === '_ww') {
-			if (i === wheres.length - 1) continue;
+			// if there's only one condition left, then no need to add brackets
+			if (i >= wheres.length - 2) continue;
 			if (sql) {
 				sql += ' and (';
 			}
