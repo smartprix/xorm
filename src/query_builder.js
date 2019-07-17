@@ -1,6 +1,9 @@
 import _ from 'lodash';
 import {QueryBuilder} from 'objection';
 
+// Patch knexjs to include upcoming where statements in bracket (for softDelete hook)
+import './knex_patch';
+
 class BaseQueryBuilder extends QueryBuilder {
 	constructor(modelClass) {
 		super(modelClass);
@@ -177,45 +180,29 @@ class BaseQueryBuilder extends QueryBuilder {
 		return this;
 	}
 
-	/*
-	 * Wraps the where condition till now into braces
-	 * so builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');
-	 * becomes "WHERE (a = 'b' OR c = 'd') AND e = 'f'"
-	 */
-	wrapWhere() {
-		const whereOperations = _.remove(this._operations, method => /where/i.test(method.name));
-
-		if (whereOperations.length > 1) {
-			this.where((q) => {
-				whereOperations.forEach((operation) => {
-					q[operation.name](...operation.args);
-				});
-			});
-		}
-		else if (whereOperations.length === 1) {
-			this._operations.push(whereOperations[0]);
-		}
-
-		return this;
-	}
-
 	_handleSoftDelete() {
 		const model = this.modelClass();
 		if (!model.softDelete) return;
 
 		const softDeleteColumn = `${model.tableName}.${model.softDeleteColumn}`;
 
-		this.onBuild((builder) => {
+		this.onBuildKnex((knex, builder) => {
 			if (!builder.isFind() || builder.context().withTrashed) return;
 
-			builder.wrapWhere();
-
+			// add the deletedAt statement
 			if (builder.context().onlyTrashed) {
-				builder.where(q => q.whereNotNull(softDeleteColumn));
+				knex.where(q => q.whereNotNull(softDeleteColumn));
 			}
 			else {
-				builder.where(q => q.whereNull(softDeleteColumn));
+				knex.where(q => q.whereNull(softDeleteColumn));
 			}
+
+			// push the _ww statement which wraps up the upcoming where condition in brackets
+			// this is done in knex_patch.js
+			knex._statements.push({
+				grouping: 'where',
+				type: '_ww',
+			});
 		});
 	}
 
