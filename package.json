@@ -29,11 +29,11 @@
     "@babel/plugin-proposal-class-properties": "^7.2.3",
     "@babel/preset-env": "^7.2.3",
     "@babel/register": "^7.0.0",
-    "@types/knex": "^0.15.1",
+    "@types/knex": "^0.16.1",
     "chai": "4.2.0",
     "eslint": "5.11.1",
     "eslint-config-smartprix": "3.5.4",
-    "knex": "^0.16.3",
+    "knex": "^0.19.0",
     "mocha": "5.2.0"
   },
   "babel": {
@@ -66,8 +66,8 @@
     }
   },
   "peerDependencies": {
-    "objection": "^1.2.2",
-    "knex": "0.x",
+    "knex": ">= 0.19.0 < 1.0",
+    "objection": "^1.6.9",
     "sm-utils": "^2.14.5"
   }
 }
