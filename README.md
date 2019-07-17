@@ -260,10 +260,6 @@ class Product extends Model {
 `deleteById(id)`: deletes the model by id\
 All three merge the id property into the query context
 
-### `wrapWhere`
-Wraps the where condition till now into braces
-so `builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');` becomes `"WHERE (a = 'b' OR c = 'd') AND e = 'f'"`
-
 ### `whereByOr(obj)`
 creates an and (or - or - or) condition
 
