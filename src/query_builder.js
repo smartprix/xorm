@@ -20,10 +20,6 @@ class BaseQueryBuilder extends QueryBuilder {
 		this.context().loaderContext = ctx;
 	}
 
-	findById(id) {
-		return this.modelClass().loadById(id, {ctx: (this.context().loaderContext || null)});
-	}
-
 	find(...args) {
 		if (args.length === 1) {
 			return this.findById(...args);
