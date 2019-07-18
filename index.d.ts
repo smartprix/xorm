@@ -71,12 +71,6 @@ declare module 'xorm' {
 		whereInOrdered(column: string, values: any[]): QueryBuilder<QM, RM, RV>;
 		andWhereInOrdered(column: string, values: any[]): QueryBuilder<QM, RM, RV>;
 		withoutScope(withoutScope?: boolean): QueryBuilder<QM, RM, RV>;
-		/*
-		 * Wraps the where condition till now into braces
-		 * so builder.where('a', 'b').orWhere('c', 'd').wrapWhere().where('e', 'f');
-		 * becomes "WHERE (a = 'b' OR c = 'd') AND e = 'f'"
-		 */
-		wrapWhere(): QueryBuilder<QM, RM, RV>;
 		withTrashed(withTrashed?: boolean): QueryBuilder<QM, RM, RV>;
 		onlyTrashed(onlyTrashed?: boolean): QueryBuilder<QM, RM, RV>;
 		softDelete(): QueryBuilderYieldingCount<QM, RM>;
