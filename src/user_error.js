@@ -6,6 +6,10 @@
 function customUserError(modelName) {
 	class UserError extends Error {
 		constructor(message) {
+			let msgStr = message;
+			if (typeof msgStr === 'object') {
+				msgStr = JSON.stringify(message);
+			}
 			super(message);
 			this.data = message;
 			this.name = 'UserError';
