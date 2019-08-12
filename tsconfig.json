@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"lib": ["es2016"]
+		"lib": ["es2018"]
 	},
 	"include": [
 		"index.d.ts"

@@ -79,6 +79,14 @@ declare module 'xorm' {
 		restore(): QueryBuilderYieldingCount<QM, RM>;
 		touch(): QueryBuilderYieldingCount<QM, RM>;
 		dontTouch(): QueryBuilder<QM, RM, RV>;
+		/**
+		 * Stream the data using cursor instead of loading all data in memory
+		 * NOTE: Only works if only one query is being fired (no eager)
+		 *
+		 * You can use `iterationBatchSize` option to iterate in batches
+		 * By default it'll stream results one by one
+		 */
+		stream(options?: object): AsyncIterator<QM>;
 	}
 
 	interface makeLoaderOpts {
