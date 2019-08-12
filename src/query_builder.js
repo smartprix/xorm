@@ -107,8 +107,8 @@ class BaseQueryBuilder extends QueryBuilder {
 	 * const ids = [1, 4, 3, 5, 8];
 	 * const query = Model.query().whereIn('id', ids).orderByArrayPos('id', ids);
 	 * ```
-	 * @param  {string} column array contains values of which column
-	 * @param  {Array<any>} values values of the columns
+	 * @param {string} column array contains values of which column
+	 * @param {Array<any>} values values of the columns
 	 */
 	orderByArrayPos(column, values) {
 		// eslint-disable-next-line
@@ -257,6 +257,44 @@ class BaseQueryBuilder extends QueryBuilder {
 	dontTouch() {
 		this.context().dontTouch = true;
 		return this;
+	}
+
+	/**
+	 * Stream the data using cursor instead of loading all data in memory
+	 * NOTE: Only works if only one query is being fired (no eager)
+	 *
+	 * You can use `iterationBatchSize` option to iterate in batches
+	 * By default it'll stream results one by one
+	 */
+	async* stream(options = {}) {
+		const knex = this.toKnexQuery();
+		const iterationBatchSize = options.iterationBatchSize || 0;
+
+		const opts = {...options};
+		if (iterationBatchSize) {
+			if (!opts.highWaterMark) opts.highWaterMark = iterationBatchSize;
+		}
+
+		const stream = knex.stream(opts);
+
+		let models = [];
+		for await (const item of stream) {
+			const model = this.modelClass().fromDatabaseJson(item);
+			if (iterationBatchSize) {
+				models.push(model);
+				if (models.length >= iterationBatchSize) {
+					yield models;
+					models = [];
+				}
+			}
+			else {
+				yield model;
+			}
+		}
+
+		if (iterationBatchSize && models.length) {
+			yield models;
+		}
 	}
 }
 
