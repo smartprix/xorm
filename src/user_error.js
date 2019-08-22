@@ -10,7 +10,7 @@ function customUserError(modelName) {
 			if (typeof msgStr === 'object') {
 				msgStr = JSON.stringify(message);
 			}
-			super(message);
+			super(msgStr);
 			this.data = message;
 			this.name = 'UserError';
 			this.model = modelName;
