@@ -1,6 +1,9 @@
 {
 	"compilerOptions": {
-		"lib": ["es2018"]
+		"lib": [
+			"es2018",
+			"esnext.asynciterable"
+		]
 	},
 	"include": [
 		"index.d.ts"
