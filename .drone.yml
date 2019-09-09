@@ -23,10 +23,11 @@ steps:
   environment:
     YARN_CACHE_FOLDER: ./../../cache
 
-- name: test
-  image: smartprix/node:12
-  commands:
-  - yarn test-only
+# TODO: Add tests
+# - name: test
+#   image: smartprix/node:12
+#   commands:
+#   - yarn test-only
 
 # Publish npm package
 - name: npm
