@@ -1,3 +1,6 @@
+# xorm
+
+[![Build Status](https://drone.t.smpx.to/api/badges/smartprix/xorm/status.svg)](https://drone.t.smpx.to/smartprix/xorm)
 <a href="https://www.npmjs.com/package/xorm"><img src="https://img.shields.io/npm/v/xorm.svg" alt="Version"></a>
 <a href="https://www.npmjs.com/package/xorm"><img src="https://img.shields.io/npm/dm/xorm.svg" alt="Downloads"></a>
 <a href="https://www.npmjs.com/package/xorm"><img src="https://img.shields.io/npm/l/xorm.svg" alt="License"></a>
@@ -5,17 +8,19 @@
 <a href="https://david-dm.org/smartprix/xorm?type=dev"><img src="https://david-dm.org/smartprix/xorm/dev-status.svg" alt="Dev Dependencies"></a>
 <a href="https://david-dm.org/smartprix/xorm?type=peer"><img src="https://david-dm.org/smartprix/xorm/peer-status.svg" alt="Peer Dependencies"></a>
 
-## xorm
 NodeJS ORM based on ObjectionJS with some extra utilities
 
 ObjectionJS documentation: http://vincit.github.io/objection.js/
 ObjectionJS Repo: https://github.com/Vincit/objection.js/
 
 ## Extra Features
+
 Xorm adds some more functionalities in ObjectionJS.
 
 ### Default Table Name
+
 You don't need to give tableName in your model. By default the tableName = name of the model.
+
 ```js
 // eg. instead of writing this
 class Person extends Model {
