@@ -1,0 +1,58 @@
+kind: pipeline
+name: default
+
+steps:
+- name: restore_cache
+  # Cache plugin https://github.com/drone-plugins/drone-volume-cache/issues/8
+  image: plugins/volume-cache
+  settings:
+    file: "${DRONE_REPO_NAME}.tar"
+    mount: ./../../cache
+    restore: true
+  volumes:
+  - name: yarn_cache
+    path: /cache
+
+- name: install
+  image: smartprix/node:12
+  commands:
+  - yarn
+  - yarn lint
+  - yarn build
+  - tsc
+  environment:
+    YARN_CACHE_FOLDER: ./../../cache
+
+- name: test
+  image: smartprix/node:12
+  commands:
+  - yarn test-only
+
+# Publish npm package
+- name: npm
+  image: plugins/npm
+  settings:
+    token:
+      from_secret: npm_token
+  when:
+    event:
+    - tag
+
+- name: rebuild_cache
+  image: plugins/volume-cache
+  settings:
+    file: "${DRONE_REPO_NAME}.tar"
+    mount: ./../../cache
+    rebuild: true
+  volumes:
+  - name: yarn_cache
+    path: /cache
+  when:
+    status:
+    - success
+    - failure
+
+volumes:
+- name: yarn_cache
+  host:
+    path: /tmp/cache-12
