@@ -282,6 +282,11 @@ class BaseModel extends Model {
 		globalLoaderContext = ctx;
 	}
 
+	static _getLoadePrefix() {
+		if (this._loaderPrefix) return this._loaderPrefix;
+		this._loaderPrefix = this.name !== this.tableName ? `${this.name}${this.tableName}` : this.name;
+		return this._loaderPrefix;
+	}
 
 	/**
 	 * @typedef {object} loaderOpts
@@ -303,7 +308,7 @@ class BaseModel extends Model {
 	 * @returns {DataLoader}
 	 */
 	static makeLoader(loaderName, loaderFunc, options = {}) {
-		const loaderKey = `${this.tableName}Custom${loaderName}DataLoader`;
+		const loaderKey = `${this._getLoadePrefix()}Custom${loaderName}DataLoader`;
 		if (globalLoaderContext[loaderKey]) return globalLoaderContext[loaderKey];
 
 		const opts = Object.assign({
@@ -409,11 +414,11 @@ class BaseModel extends Model {
 				columnName = columnName[0];
 			}
 			else {
-				loaderName = `${this.tableName}${columnName.join('-')}DataLoader`;
+				loaderName = `${this._getLoadePrefix()}${columnName.join('-')}DataLoader`;
 			}
 		}
 		if (!loaderName) {
-			loaderName = `${this.tableName}${columnName}DataLoader`;
+			loaderName = `${this._getLoadePrefix()}${columnName}DataLoader`;
 		}
 
 		const cache = !!options.ctx;
@@ -459,7 +464,7 @@ class BaseModel extends Model {
 		const cache = !!options.ctx;
 		const ctx = this._getLoaderCtx(options);
 
-		let loaderName = `${this.tableName}${columnName}DataLoader`;
+		let loaderName = `${this._getLoadePrefix()}${columnName}DataLoader`;
 		if (options.modify) {
 			if (_.isPlainObject(options.modify)) {
 				loaderName += JSON.stringify(options.modify);
@@ -506,7 +511,7 @@ class BaseModel extends Model {
 		const cache = !!options.ctx;
 		const ctx = this._getLoaderCtx(options);
 
-		const loaderName = `${this.tableName}Rel${relationName}DataLoader`;
+		const loaderName = `${this._getLoadePrefix()}Rel${relationName}DataLoader`;
 		if (ctx[loaderName]) return ctx[loaderName];
 
 		ctx[loaderName] = new DataLoader(async (keys) => {
