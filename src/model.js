@@ -166,6 +166,7 @@ class BaseModel extends Model {
 	 * 		columns: [] (include only these columns while caching)
 	 * 		excludeColumns: [] (exclude these columns while caching)
 	 * 		maxLocalItems: max items in the local cache of redis (using an lru cache)
+	 * 		useRedisCache: save cached items in redis (default: true)
 	 * }
 	 * if this is an object, all items accessed with loadById are cached for ttl duration
 	 */
@@ -260,10 +261,16 @@ class BaseModel extends Model {
 
 	static get idRedisCache() {
 		if (!this.__idRedisCache) {
-			const maxLocalItems = this.cacheById && this.cacheById.maxLocalItems;
-			this.__idRedisCache = new LocalRedisCache(`xorm:${this.name}:id`, {
-				maxLocalItems,
-			});
+			const cacheById = this.cacheById;
+			if (!cacheById) {
+				this.__idRedisCache = new LocalRedisCache(`xorm:${this.name}:id`);
+			}
+			else {
+				this.__idRedisCache = new LocalRedisCache(`xorm:${this.name}:id`, {
+					maxLocalItems: cacheById.maxLocalItems,
+					useRedisCache: cacheById.useRedisCache === false ? false : true,
+				});
+			}
 		}
 
 		return this.__idRedisCache;
